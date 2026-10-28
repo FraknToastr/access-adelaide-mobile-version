@@ -5,7 +5,7 @@ set -euo pipefail
 project_root="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 cd -- "$project_root"
 remote_url="https://github.com/FraknToastr/access-adelaide-mobile-version.git"
-target_branch="${1:-workspace-sync}"
+target_branch="${1:-main}"
 git_cmd(){ rtk proxy git "$@"; }
 
 if ! command -v rtk >/dev/null 2>&1; then
@@ -17,10 +17,6 @@ if [[ -d .git && ! -w .git ]]; then
   exit 1
 fi
 git_cmd check-ref-format --branch "$target_branch" >/dev/null
-if [[ "$target_branch" == main || "$target_branch" == master ]]; then
-  printf '%s\n' 'Use a working branch here; the published default branch is intentionally preserved.' >&2
-  exit 1
-fi
 
 if git_cmd rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   actual_root="$(git_cmd rev-parse --show-toplevel)"
