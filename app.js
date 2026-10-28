@@ -59,6 +59,8 @@ const defaults = {textSize:'150',theme:'contrast',dyslexicFont:false,spacing:fal
 const SETTINGS='access-adelaide-settings-v1', SAVED='access-adelaide-journey-v1';
 let pendingRouteMap=false,bigMap=false,bigMapScroll=0,legendOpen=false,legendScrollY=0,locationRequest=0,maplessApplied;
 let settings={...defaults}, storageWorks=true, map=null, mapReady=false, markers=[], route=null, stepIndex=0, currentView='', speechJob=null, lastDialogTrigger=null, lastSpeechTrigger=null;
+let journeyPoints={start:null,end:null},routingTask=0,routingPromise=null,mapSelection=null;
+const routeProfiles={shortest:'Shortest',fastest:'Fastest',stepfree:'Step-free (provisional)'};
 const selectedLayers=new Set(Object.keys(D.layers));
 try { const s=JSON.parse(localStorage.getItem(SETTINGS));if(s && s.remember===true){settings=sanitiseSettings(s);if(String(s.textSize)==='200')localStorage.setItem(SETTINGS,JSON.stringify(settings));} } catch { storageWorks=false; }
 function sanitiseSettings(s) {
@@ -96,7 +98,7 @@ function navigate(){
  const requested=openGuide?'help':location.hash.slice(1);
  if(openGuide)history.replaceState(null,'','#help');if(currentView && !VIEWS.includes(requested))return;const view=VIEWS.includes(requested)?requested:initialView();
  const changed=view!==currentView;
- if(changed){cancelLocate();if(view!=='explore')resetMapUI();}
+ if(changed){cancelLocate();if(view!=='journey'&&$('#calculate-route').disabled)invalidateJourney();if(view!=='explore'){resetMapUI();if(mapSelection)endMapSelection(false,false);}}
  currentView=view;
  if(view==='help'&&changed&&!openGuide)$('#platform-guide').open=false;
  document.body.classList.toggle('in-setup',view==='setup');
@@ -104,7 +106,7 @@ function navigate(){
  $$('#bottom-nav a').forEach(a=>{if(a.hash===`#${view}`)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
  document.title=`${{setup:'My access setup',explore:'Explore',journey:'Journey',access:'Access settings',help:'Help'}[view]} · Access Adelaide`;
  if(changed && requested){window.scrollTo({top:0,behavior:'instant'});$(`#${view}-title`).focus({preventScroll:true});}
- if(view==='explore'){initMap();if(map)requestAnimationFrame(()=>{map.resize();if(pendingRouteMap&&route){pendingRouteMap=false;const bounds=mapBounds(route.coords);map.fitBounds(bounds,{padding:48,maxZoom:16,duration:0});$('#show-map').focus({preventScroll:true});$('#map-panel').scrollIntoView({block:'start',behavior:'instant'});announce('Sample route shown as a dashed line. Written directions remain on Journey.');}});}
+ if(view==='explore'){initMap();if(map)requestAnimationFrame(()=>{map.resize();if(pendingRouteMap&&route){pendingRouteMap=false;const bounds=mapBounds(route.coords);map.fitBounds(bounds,{padding:48,maxZoom:16,duration:0});$('#show-map').focus({preventScroll:true});$('#map-panel').scrollIntoView({block:'start',behavior:'instant'});announce('Calculated walking route shown. Written directions remain on Journey.');}});}
  if(view==='journey'){renderSaved();requestAnimationFrame(resizeJourneyInputs);}
  if(openGuide){const guide=$('#platform-guide');guide.open=true;requestAnimationFrame(()=>{guide.querySelector('summary').focus({preventScroll:true});window.scrollTo({top:window.scrollY+guide.getBoundingClientRect().top-12,behavior:'instant'});});}
  document.dispatchEvent(new CustomEvent('accessadelaide:view',{detail:{view}}));
@@ -136,7 +138,7 @@ $('#places').onclick=e=>{const b=e.target.closest('[data-place]');if(b)openPlace
 function openDialog(d,trigger){lastDialogTrigger=trigger||document.activeElement;d.showModal();document.dispatchEvent(new CustomEvent('accessadelaide:dialog',{detail:{id:d.id}}));}
 function openPlace(id,trigger){
  const p=D.places.find(p=>p.id===id);if(!p)return;
- $('#place-dialog-body').innerHTML=`<div class="dialog-place-heading"><span class="place-icon ${p.type}" aria-hidden="true">${icon(D.layers[p.type].icon)}</span><h2 id="place-dialog-title">${p.name}</h2></div><p class="dialog-note">${p.details}</p><dl class="details-grid"><dt>Type & area</dt><dd>${D.layers[p.type].singular} · ${p.area}</dd><dt>Illustrative facilities</dt><dd>${p.facilities}</dd><dt>What is unknown</dt><dd>${p.unknown}</dd><dt>Source & confidence</dt><dd>Invented demonstration point. No survey, operator confirmation or inspection date.</dd></dl><div class="notice"><p><strong>Check before a real visit.</strong>This is mock data, not a confirmed accessible facility.</p></div><button type="button" class="secondary full" data-plan-place="${p.id}">Plan a mock visit here</button>`;
+ $('#place-dialog-body').innerHTML=`<div class="dialog-place-heading"><span class="place-icon ${p.type}" aria-hidden="true">${icon(D.layers[p.type].icon)}</span><h2 id="place-dialog-title">${p.name}</h2></div><p class="dialog-note">${p.details}</p><dl class="details-grid"><dt>Type & area</dt><dd>${D.layers[p.type].singular} · ${p.area}</dd><dt>Illustrative facilities</dt><dd>${p.facilities}</dd><dt>What is unknown</dt><dd>${p.unknown}</dd><dt>Source & confidence</dt><dd>Invented demonstration point. No survey, operator confirmation or inspection date.</dd></dl><div class="notice"><p><strong>Check before a real visit.</strong>This is mock data, not a confirmed accessible facility.</p></div><button type="button" class="secondary full" data-plan-place="${p.id}">Plan a visit to this sample point</button>`;
  openDialog($('#place-dialog'),trigger);
 }
 $$('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
@@ -146,7 +148,7 @@ function initMap(){
  if(map||$('#map-panel').hidden)return;
  if(!window.AccessBasemaps){$('#map-loading').textContent='The map engine did not load. The places list remains available.';return;}
  map=window.AccessBasemaps.create({data:D,groups:markerGroups,button:pointButton});mapReady=true;
- if(route)map.setRoute(route.coords);
+ if(route){map.setRoute(route.coords);map.setRouteEndpoints(route.snaps.start.coords,route.snaps.end.coords);}
 }
 function markerGroups(project,w,h){
  const hostBox=$('#map').getBoundingClientRect();
@@ -311,6 +313,9 @@ function resizeJourneyInputs(){
  });
 }
 function invalidateJourney(){
+ routingTask++;
+ $('#calculate-route').disabled=false;$('#calculate-route').removeAttribute('aria-busy');
+ $('#routing-status').textContent='';
  if(!route)return;
  $('#journey-result').hidden=true;route=null;removeRouteFromMap();stopSpeech();
 }
@@ -323,7 +328,7 @@ function cancelLocate(clearStatus=true){
 $('#locate-me').onclick=()=>{
  cancelLocate();
  const status=$('#location-status'),origin=$('#origin-text');
- if(!window.isSecureContext||!navigator.geolocation){status.textContent='Location is unavailable here. Enter your starting place above, or use the app over HTTPS or localhost.';return;}
+ if(!window.isSecureContext||!navigator.geolocation){status.textContent='Location is unavailable here. Choose your start on the map, or use the app over HTTPS or localhost.';return;}
  const request=locationRequest,previous=origin.value;
  const button=$('#locate-me');button.disabled=true;button.setAttribute('aria-busy','true');
  $('#locate-button-label').textContent='Locating…';status.textContent='Finding your location…';
@@ -333,21 +338,22 @@ $('#locate-me').onclick=()=>{
   if(!isCurrent())return;
   finish();
   const {latitude,longitude}=position.coords;
-  if(!Number.isFinite(latitude)||!Number.isFinite(longitude)){status.textContent='Your location could not be found. Enter your starting place above.';return;}
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude)){status.textContent='Your location could not be found. Choose your start on the map.';return;}
   origin.value='Current location ('+latitude.toFixed(5)+', '+longitude.toFixed(5)+')';
+  journeyPoints.start={coords:[longitude,latitude],label:origin.value,kind:'gps'};
   invalidateJourney();resizeJourneyInputs();
   status.textContent='Your current location is set as the starting point.';
  },error=>{
   if(!isCurrent())return;
   finish();
-  status.textContent=error.code===1?'Location permission was not granted. Enter your starting place above.':error.code===3?'Finding your location took too long. Try again or enter your starting place above.':'Your location could not be found. Try again or enter your starting place above.';
+  status.textContent=error.code===1?'Location permission was not granted. Choose your start on the map.':error.code===3?'Finding your location took too long. Try again or choose your start on the map.':'Your location could not be found. Try again or choose your start on the map.';
  },{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 };
 $$('.journey-location-input').forEach(input=>{
  input.addEventListener('input',()=>{
   const cursor=input.selectionStart;
   if(/[\r\n]/.test(input.value)){input.value=input.value.replace(/[\r\n]+/g,' ');input.setSelectionRange(cursor,cursor);}
-  if(input.id==='origin-text')cancelLocate();
+  if(input.id==='origin-text'){cancelLocate();journeyPoints.start=null;}else journeyPoints.end=null;
   invalidateJourney();resizeJourneyInputs();
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#journey-form').requestSubmit();}});
@@ -355,56 +361,152 @@ $$('.journey-location-input').forEach(input=>{
 if(document.fonts){document.fonts.ready.then(resizeJourneyInputs);document.fonts.addEventListener('loadingdone',resizeJourneyInputs);}
 ['reset-settings','clear-data'].forEach(id=>$('#'+id).addEventListener('click',()=>{resetMapUI();cancelLocate();}));
 
-// Journey geometry remains deliberately illustrative, including when GPS labels the origin.
-function buildRoute(spec){
- const dest=D.destinations[spec.destination]||D.destinations.library;
- const destinationLabel=typeof spec.destinationLabel==='string'?spec.destinationLabel.trim().slice(0,160):dest.name;
- const origin=typeof spec.origin==='string'&&spec.origin.trim()?spec.origin.trim().slice(0,160):'Example starting place';
- const style=spec.style||'rest',extra=style==='rest'?170:style==='quiet'?260:0,distance=dest.base+extra;
- const duration=Math.ceil(distance/Number(spec.pace||50));
- const styleName={rest:'More places to rest',direct:'More direct',quiet:'Quieter surroundings'}[style];
- const proportions=style==='rest'?[.12,.25,.12,.30,.21]:[.15,.30,.35,.20];
- let assigned=0;
- const stepDistances=proportions.map((p,i)=>{const d=i===proportions.length-1?distance-assigned:Math.round(distance*p/10)*10;assigned+=d;return d;});
- let steps=[
- {title:'Begin at your starting place',text:`Your starting label is ${origin}. The map uses example coordinates; these steps are illustrative.`},
- {title:'Follow the sample street section',text:'This shows how a written step could appear. It is not a real direction for your chosen place. Surfaces, gradients and obstructions are unknown.'}
- ];
- if(style==='rest')steps.push({title:'Pause at the sample rest stop',text:'A mock rest stop is shown on North Terrace. Take as much time as you need. Actual seating and shade are unverified.'});
- steps.push({title:spec.destination==='mall'?'Continue toward the mall precinct':'Continue toward the cultural precinct',text:style==='quiet'?'This example takes a longer section to illustrate a quieter preference. Real noise and crowds have not been assessed.':'The sample passes a crossing. Kerb ramps, tactile cues and signal timing have not been assessed. Follow real crossing signals.'});
- steps.push({title:`Example arrival: ${destinationLabel}`,text:'You have reached the end of the demonstration. Confirm the real entrance, access facilities and opening hours before visiting.'});
- steps=steps.map((s,i)=>({...s,distance:stepDistances[i]}));
- const coords=[[138.59688,-34.9215],[138.59688,-34.92162],[138.59916,-34.92162]];
- if(style==='rest')coords.push([138.59916,-34.92132],[138.59985,-34.92132],[138.59985,-34.92162]);
- if(style==='quiet')coords.push([138.59928,-34.92035],[138.60115,-34.92035],[138.60155,-34.92162]);
- if(spec.destination==='mall')coords.push([138.6015,-34.92162],[138.6015,-34.92278],dest.coords);
- else coords.push([dest.coords[0],-34.92162],dest.coords);
- return {...spec,style,pace:String(spec.pace||50),needs:Array.isArray(spec.needs)?spec.needs:[],origin,destinationLabel,name:destinationLabel,styleName,distance,duration,steps,coords};
+// Local endpoint resolution never treats arbitrary prose as geocoded coordinates.
+const localJourneyPlaces=[
+ ...D.places.map(p=>({id:p.id,label:p.name,coords:p.coordinates,kind:'sample'})),
+ ...Object.entries(D.destinations).map(([id,p])=>({id:'destination-'+id,label:p.name,coords:p.coords,kind:'sample'}))
+];
+const normalisePlace=s=>s.trim().toLocaleLowerCase('en-AU').replace(/[’']/g,'').replace(/\s+/g,' ');
+function resolveJourneyPoint(target){
+ const input=$(target==='start'?'#origin-text':'#destination-text'),label=input.value.trim();
+ const point=journeyPoints[target];
+ if(point&&point.label===label)return point;
+ const matches=localJourneyPlaces.filter(p=>normalisePlace(p.label)===normalisePlace(label));
+ const unique=new Map(matches.map(p=>[p.coords.join(','),p]));
+ if(unique.size===1){const found=[...unique.values()][0];return {...found,label};}
+ return null;
 }
-$('#journey-form').onsubmit=e=>{e.preventDefault();cancelLocate();const dest=$('#destination-text');if(!dest.value.trim()){$('#destination-error').hidden=false;dest.setAttribute('aria-invalid','true');dest.focus();announce('Please describe a destination or type of place.');return;}dest.removeAttribute('aria-invalid');$('#destination-error').hidden=true;route=buildRoute({destination:$('#destination').value||'library',destinationLabel:dest.value.trim(),origin:$('#origin-text').value.trim(),style:$('input[name="route-style"]:checked').value,pace:ui.getChoice('pace'),needs:$$('input[name="needs"]:checked').map(c=>c.value)});renderRoute();$('#result-title').focus();announce('Mock journey ready. Your text was not geocoded. All route and access information is unverified.');};
+function setJourneyPoint(target,point,focus=false){
+ invalidateJourney();
+ const input=$(target==='start'?'#origin-text':'#destination-text');
+ input.value=point.label;journeyPoints[target]={...point,coords:[...point.coords]};
+ $('#destination-error').hidden=true;$('#destination-text').removeAttribute('aria-invalid');
+ resizeJourneyInputs();if(focus)input.focus();
+}
+for(const target of ['start','end']){
+ const choices=$(`#sample-${target}-choices`);
+ choices.innerHTML=localJourneyPlaces.map((p,i)=>`<button type="button" class="secondary" data-journey-place="${i}">${escapeHTML(p.label)}<span class="sub">Sample place · details unverified</span></button>`).join('');
+ choices.addEventListener('click',e=>{const button=e.target.closest('[data-journey-place]');if(!button)return;const point=localJourneyPlaces[Number(button.dataset.journeyPlace)];if(!point)return;setJourneyPoint(target,point,true);choices.closest('details').open=false;announce('Sample point selected. Its facilities and entrance have not been verified.');});
+}
+function ensureRouter(){
+ if(!routingPromise){
+  routingPromise=Promise.resolve().then(()=>{
+   if(!window.AccessRouting||!window.AccessRoutingData)throw new Error('The local walking network could not load. Reopen the app with its source files available.');
+   return window.AccessRouting.create(window.AccessRoutingData);
+  }).catch(error=>{routingPromise=null;throw error;});
+ }
+ return routingPromise;
+}
+function updateSelectionPosition(){
+ if(!mapSelection||!map)return;
+ const c=map.getCenterCoordinates();
+ $('#map-selection-position').textContent=`Crosshair: ${c[1].toFixed(5)}, ${c[0].toFixed(5)}. The point must be within 50 metres of an eligible path.`;
+}
+document.addEventListener('accessadelaide:mapmove',updateSelectionPosition);
+async function beginMapSelection(target){
+ cancelLocate();if($('#calculate-route').disabled)invalidateJourney();
+ const selection={target,returnFocus:target==='start'?'#choose-start-map':'#choose-end-map'};
+ mapSelection=selection;$('#routing-status').textContent='Preparing the local walking network…';
+ try{
+  const engine=await ensureRouter();if(mapSelection!==selection)return;
+  setExploreMode(true);location.hash='explore';
+  document.body.classList.add('choosing-route-location');$('#map-selection').hidden=false;$('#selection-crosshair').hidden=false;
+  $('#map-selection-title').textContent=target==='start'?'Choose your starting point':'Choose your destination';
+  if(!map)throw new Error('The map is unavailable. Choose one of the coordinate-backed sample places instead.');
+  map.setNetwork(engine.networkGeoJSON());
+  const centre=resolveJourneyPoint(target)?.coords||D.places.find(p=>p.id==='station').coordinates;
+  const onSelect=coords=>{if(mapSelection!==selection)return;map.setSelection({active:true,coords,onSelect});updateSelectionPosition();};
+  map.setSelection({active:true,coords:centre,onSelect});
+  requestAnimationFrame(()=>{if(mapSelection!==selection)return;map.resize();updateSelectionPosition();$('#map-selection-title').focus({preventScroll:true});window.scrollTo({top:window.scrollY+$('#map-selection').getBoundingClientRect().top-8,behavior:'instant'});});
+  $('#routing-status').textContent='';announce('Choose a point by tapping the map or using Move Map, then choose Use this location.');
+ }catch(error){if(mapSelection===selection){endMapSelection(false);$('#routing-status').textContent=error.message;}}
+}
+function endMapSelection(confirm=false,returnToJourney=true){
+ const selection=mapSelection;if(!selection)return;
+ if(confirm&&map){const coords=map.getCenterCoordinates();setJourneyPoint(selection.target,{coords,label:`Map point (${coords[1].toFixed(5)}, ${coords[0].toFixed(5)})`,kind:'map'});}
+ mapSelection=null;if(map)map.setSelection(null);$('#routing-status').textContent='';
+ $('#map-selection').hidden=true;$('#selection-crosshair').hidden=true;document.body.classList.remove('choosing-route-location');
+ if(returnToJourney){location.hash='journey';requestAnimationFrame(()=>$(selection.returnFocus).focus());announce(confirm?'Map point selected. Calculate your journey to check network coverage.':'Map selection cancelled. Your previous point has been kept.');}
+}
+$('#choose-start-map').onclick=()=>beginMapSelection('start');$('#choose-end-map').onclick=()=>beginMapSelection('end');
+$('#confirm-map-location').onclick=()=>endMapSelection(true);$('#cancel-map-location').onclick=()=>endMapSelection(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mapSelection){e.preventDefault();endMapSelection(false);}});
+function routeSteps(segments,destinationLabel){
+ const bearing=coords=>{const a=coords[0],b=coords[coords.length-1];return Math.atan2((b[0]-a[0])*Math.cos(a[1]*Math.PI/180),b[1]-a[1])*180/Math.PI;};
+ const groups=[];
+ for(const segment of segments){
+  if(segment.distance<=0)continue;
+  const angle=bearing(segment.coords),previous=groups[groups.length-1];
+  const delta=previous?((angle-previous.angle+540)%360)-180:0;
+  if(previous&&Math.abs(delta)<30&&segment.location===previous.location&&segment.pathType===previous.pathType){previous.distance+=segment.distance;previous.angle=angle;continue;}
+  groups.push({...segment,angle,turn:delta});
+ }
+ if(!groups.length)return [{title:'Start and destination coincide',text:'Both points snap to the same location. There is no walking segment.',distance:0}];
+ return groups.map((g,i)=>({
+  title:i===0?'Begin on the walking network':Math.abs(g.turn)>150?'Turn back':g.turn>30?'Turn right':g.turn< -30?'Turn left':'Continue',
+  text:`${g.location?g.location+' · ':''}${g.pathType}. Follow the path for approximately ${Math.round(g.distance)} metres.${i===groups.length-1?' Finish at the snapped destination near '+destinationLabel+'.':''} Turn estimates are approximate; check actual crossings and conditions.`,
+  distance:Math.round(g.distance)
+ }));
+}
+async function calculateJourney(){
+ invalidateJourney();cancelLocate();
+ const request=routingTask;
+ const start=resolveJourneyPoint('start'),end=resolveJourneyPoint('end');
+ if(!start||!end){
+  const target=!start?'starting point':'destination';
+  $('#routing-status').textContent=`Choose a ${target} on the map or select a sample place. Typed addresses and descriptions are not geocoded.`;
+  $(start?'#choose-end-map':'#choose-start-map').focus();announce($('#routing-status').textContent);return;
+ }
+ const profile=$('input[name="route-style"]:checked').value,pace=Number(ui.getChoice('pace'));
+ const button=$('#calculate-route');button.disabled=true;button.setAttribute('aria-busy','true');$('#routing-status').textContent='Calculating on the local walking network…';
+ try{
+  const engine=await ensureRouter();if(request!==routingTask)return;
+  const result=await engine.calculate({start:start.coords,end:end.coords,profile,pace,cancelled:()=>request!==routingTask});
+  if(request!==routingTask)return;
+  journeyPoints={start,end};
+  route={...result,style:profile,styleName:routeProfiles[profile],pace:String(pace),origin:start.label,destinationLabel:end.label,name:end.label,points:{start,end},needs:$$('input[name="needs"]:checked').map(c=>c.value),steps:routeSteps(result.segments,end.label)};
+  renderRoute();$('#routing-status').textContent='';$('#result-title').focus();announce('Walking-network journey calculated. Access and conditions remain unverified.');
+ }catch(error){
+  if(request!==routingTask||error.code==='CANCELLED')return;
+  const recovery=error.code==='DISCONNECTED'?' Choose different points within the same connected walking network.':error.code==='OUTSIDE_COVERAGE'?' Choose a point closer to an eligible path, within 50 metres.':' Choose your points again or try another route type.';
+  $('#routing-status').textContent=error.message+recovery;announce($('#routing-status').textContent);
+ }finally{if(request===routingTask){button.disabled=false;button.removeAttribute('aria-busy');}}
+}
+$('#journey-form').onsubmit=e=>{e.preventDefault();calculateJourney();};
 $('#destination-text').oninput=()=>{if($('#destination-text').value.trim()){$('#destination-error').hidden=true;$('#destination-text').removeAttribute('aria-invalid');}};
-$('#journey-form').addEventListener('change',invalidateJourney);
-function removeRouteFromMap(){if(map)map.setRoute([]);}
+$('#journey-form').addEventListener('change',e=>{if(e.target.matches('input'))invalidateJourney();});
+function removeRouteFromMap(){if(map){map.setRoute([]);map.setRouteEndpoints(null,null);}$('#fit-route').hidden=true;}
 function renderRoute(){
- stepIndex=0;$('#journey-result').hidden=false;
- const r=route;
- $('#route-summary').innerHTML=`<div class="route-card"><p>${escapeHTML(r.origin)} →</p><h3>${escapeHTML(r.name)}</h3><p>${r.styleName} · illustrative route</p><div class="route-stats"><div><strong>${r.distance} m</strong><span>Sample distance</span></div><div><strong>~${r.duration} min</strong><span>At your chosen pace</span></div></div></div><div class="route-caveat"><strong>Access has not been verified.</strong><p>Width, gradient, surface quality, crossings, facilities and temporary closures are unknown.</p><p>Requested needs: ${r.needs.length?r.needs.join('; '):'none selected'}. These are recorded preferences; this demo has not checked whether the route meets them.</p></div>`;
- $('#step-guide').innerHTML=`<p class="small">${r.steps.length} steps</p><p class="small">Read all steps below, or move through them at your own pace. Nothing advances automatically.</p><ol class="steps" role="list">${r.steps.map((s,i)=>`<li id="step-${i}" role="listitem" tabindex="-1"><span class="step-number" aria-hidden="true">${i+1}</span><div><p><strong>${escapeHTML(s.title)}</strong>${escapeHTML(s.text)}</p><span class="small">${s.distance} m · sample segment</span></div></li>`).join('')}</ol><p id="step-progress" class="small">Step 1 of ${r.steps.length}</p><div class="step-controls"><button id="previous-step" class="secondary" disabled>Previous step</button><button id="next-step" class="primary">Next step</button></div>`;
- $('#previous-step').onclick=()=>moveStep(-1);$('#next-step').onclick=()=>moveStep(1);
- drawRoute();
+ stepIndex=0;$('#journey-result').hidden=false;const r=route;
+ $('#route-summary').innerHTML=`<div class="route-card"><p>${escapeHTML(r.origin)} →</p><h3>${escapeHTML(r.name)}</h3><p>${r.styleName} · calculated walking network</p><div class="route-stats"><div><strong>${Math.round(r.distance)} m</strong><span>Network distance</span></div><div><strong>~${Math.ceil(r.duration)} min</strong><span>Estimated moving time</span></div></div><p class="route-snap-info">Start snapped ${r.snaps.start.distance.toFixed(1)} m; destination snapped ${r.snaps.end.distance.toFixed(1)} m. Limit: 50 m each. These offsets are outside the calculated route.</p></div><div class="route-caveat"><strong>Test route. Access has not been verified.</strong><p>Private, unofficial, proposed and timed paths are excluded.${r.style==='stepfree'?' Recorded stairs and escalators are also excluded; this does not establish wheelchair access.':''}</p><p>Kerb ramps, gradients, widths, surfaces, crossings, closures and facilities have not been checked. ${r.points.start.kind==='sample'||r.points.end.kind==='sample'?'The selected sample place information is invented and its entrance is unverified.':''}</p><p>Preferences not checked: ${escapeHTML(r.needs.join('; ')||'none selected')}. Rest stops and quieter surroundings are not optimised. ETA uses network speed estimates scaled to your ${r.pace} m/min pace; rest time is extra.</p></div>`;
+ $('#step-guide').innerHTML=`<p class="small">${r.steps.length} approximate ${r.steps.length===1?'step':'steps'}. Read below or move at your own pace. Nothing advances automatically.</p><ol class="steps" role="list">${r.steps.map((s,i)=>`<li id="step-${i}" role="listitem" tabindex="-1"><span class="step-number" aria-hidden="true">${i+1}</span><div><p><strong>${escapeHTML(s.title)}</strong>${escapeHTML(s.text)}</p><span class="small">${s.distance} m · network segment</span></div></li>`).join('')}</ol><p id="step-progress" class="small">Step 1 of ${r.steps.length}</p><div class="step-controls"><button id="previous-step" class="secondary" disabled>Previous step</button><button id="next-step" class="primary" ${r.steps.length===1?'disabled':''}>Next step</button></div>`;
+ $('#previous-step').onclick=()=>moveStep(-1);$('#next-step').onclick=()=>moveStep(1);drawRoute();$('#fit-route').hidden=false;
 }
-function moveStep(delta){if(!route)return;stepIndex=Math.min(route.steps.length-1,Math.max(0,stepIndex+delta));$$('.steps li').forEach((li,i)=>li.classList.toggle('step-focus',i===stepIndex));const step=$(`#step-${stepIndex}`);step.focus();step.scrollIntoView({block:'center',behavior:'instant'});$('#step-progress').textContent=`Step ${stepIndex+1} of ${route.steps.length}`;$('#previous-step').disabled=stepIndex===0;$('#next-step').disabled=stepIndex===route.steps.length-1;announce(`Step ${stepIndex+1} of ${route.steps.length}. ${route.steps[stepIndex].title}.`);}
-function drawRoute(){if(map&&route)map.setRoute(route.coords);}
+function moveStep(delta){if(!route)return;stepIndex=Math.min(route.steps.length-1,Math.max(0,stepIndex+delta));$$('.steps li').forEach((li,i)=>li.classList.toggle('step-focus',i===stepIndex));const step=$(`#step-${stepIndex}`);step.focus();window.scrollTo({top:window.scrollY+step.getBoundingClientRect().top-30,behavior:'instant'});$('#step-progress').textContent=`Step ${stepIndex+1} of ${route.steps.length}`;$('#previous-step').disabled=stepIndex===0;$('#next-step').disabled=stepIndex===route.steps.length-1;announce(`Step ${stepIndex+1} of ${route.steps.length}. ${route.steps[stepIndex].title}.`);}
+function drawRoute(){if(map&&route){map.setRoute(route.coords);map.setRouteEndpoints(route.snaps.start.coords,route.snaps.end.coords);}}
 $('#route-map').onclick=()=>{pendingRouteMap=true;setExploreMode(true);location.hash='explore';};
-function routeText(r){return `ACCESS ADELAIDE — SAMPLE JOURNEY\nDEMO ONLY. Not for real navigation. Access and facilities are unverified.\n\n${r.origin} to ${r.name}\n${r.styleName}\nIllustrative distance: ${r.distance} m; estimated moving time: ${r.duration} minutes at ${r.pace} m/min, plus any rest time.\nRequested needs (not checked): ${r.needs.join('; ')||'none selected'}.\n\n${r.steps.map((s,i)=>`${i+1}. ${s.title} (${s.distance} m, sample segment)\n${s.text}`).join('\n\n')}\n\nUnknown: gradient, path width, surfaces, crossings, opening hours, obstructions and facility availability. Confirm with real operators and current information before travel.\n`;}
+$('#fit-route').onclick=()=>{if(map&&route)map.fitBounds(mapBounds(route.coords),{padding:48,maxZoom:17,duration:settings.motion?0:200});};
+function routeText(r){return `ACCESS ADELAIDE — WALKING-NETWORK TEST JOURNEY\nNot a verified navigation or accessibility service.\n\n${r.origin} to ${r.name}\n${r.styleName}\nNetwork distance: ${Math.round(r.distance)} m; estimated moving time: ${Math.ceil(r.duration)} minutes at your chosen ${r.pace} m/min pace. Rest time is extra.\nStart snap: ${r.snaps.start.distance.toFixed(1)} m; destination snap: ${r.snaps.end.distance.toFixed(1)} m (limit 50 m each; offsets excluded from route).\nPreferences not checked: ${r.needs.join('; ')||'none selected'}.\n\n${r.steps.map((s,i)=>`${i+1}. ${s.title} (${s.distance} m)\n${s.text}`).join('\n\n')}\n\nTurn estimates are approximate. Unknown: kerb ramps, gradient, width, surfaces, crossings, closures and facility availability. Sample place information and entrances are unverified. Private, unofficial, proposed and timed paths are excluded; Step-free additionally excludes recorded stairs and escalators. ETA uses Shape_Length / Speed, scaled by 1.39 / (chosen pace / 60).\nNetwork version: ${r.networkVersion}\n`;}
 function downloadText(name,text){const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
-$('#download-route').onclick=()=>{if(route){downloadText('Access_Adelaide_Sample_Journey.txt',routeText(route));announce('Sample journey text download requested.');}};
-function readSaved(){try{const x=JSON.parse(localStorage.getItem(SAVED));if(!x||!D.destinations[x.destination]||!['rest','direct','quiet'].includes(x.style)||!['35','50','70'].includes(String(x.pace)))return null;const validNeeds=$$('input[name="needs"]').map(c=>c.value);return{destination:x.destination,destinationLabel:typeof x.destinationLabel==='string'?x.destinationLabel.slice(0,160):D.destinations[x.destination].name,origin:typeof x.origin==='string'?x.origin.slice(0,160):'Adelaide Railway Station',style:x.style,pace:String(x.pace),needs:Array.isArray(x.needs)?x.needs.filter(n=>validNeeds.includes(n)):[]};}catch{return null;}}
-function renderSaved(){const s=readSaved();$('#saved-plan').hidden=!s;if(s)$('#saved-title').textContent=`${s.origin} → ${s.destinationLabel} · mock journey`;}
-$('#save-route').onclick=()=>{if(!route)return;try{localStorage.setItem(SAVED,JSON.stringify({destination:route.destination,destinationLabel:route.destinationLabel,origin:route.origin,style:route.style,pace:route.pace,needs:route.needs}));renderSaved();announce('One sample journey saved on this device. It includes your chosen access preferences. Remove it from Journey at any time.');}catch{announce('Your browser could not save this journey. You can download the text instead.');}};
-$('#load-saved').onclick=()=>{cancelLocate();const spec=readSaved();if(!spec){announce('This saved sample could not be opened. Build a new sample journey.');return;}$('#destination').value=spec.destination;$('#destination-text').value=spec.destinationLabel;$('#origin-text').value=spec.origin;$(`input[name="route-style"][value="${spec.style}"]`).checked=true;ui.setChoice('pace',spec.pace);$$('input[name="needs"]').forEach(c=>c.checked=spec.needs.includes(c.value));route=buildRoute(spec);renderRoute();resizeJourneyInputs();$('#result-title').focus();announce('Saved sample journey opened.');};
+$('#download-route').onclick=()=>{if(route){downloadText('Access_Adelaide_Walking_Journey.txt',routeText(route));announce('Walking journey text download requested.');}};
+function readSaved(){
+ try{
+  const x=JSON.parse(localStorage.getItem(SAVED));if(!x||typeof x!=='object')return null;
+  if(x.version!==2)return {legacy:true,origin:typeof x.origin==='string'?x.origin.slice(0,160):'',destinationLabel:typeof x.destinationLabel==='string'?x.destinationLabel.slice(0,160):''};
+  const validPoint=p=>p&&typeof p.label==='string'&&p.label.length<=160&&['sample','map','gps'].includes(p.kind)&&Array.isArray(p.coords)&&p.coords.length===2&&p.coords.every(Number.isFinite)&&Math.abs(p.coords[0])<=180&&Math.abs(p.coords[1])<=90;
+  if(!validPoint(x.points?.start)||!validPoint(x.points?.end)||!Object.hasOwn(routeProfiles,x.profile)||![35,50,70].includes(Number(x.pace)))return null;
+  return {...x,needs:Array.isArray(x.needs)?x.needs.filter(n=>$$('input[name="needs"]').some(c=>c.value===n)):[]};
+ }catch{return null;}
+}
+function renderSaved(){const saved=readSaved();$('#saved-plan').hidden=!saved;if(saved)$('#saved-title').textContent=saved.legacy?'Saved illustrative journey: choose both endpoints again before calculating.':`${saved.points.start.label} → ${saved.points.end.label} · recalculated when opened`;}
+$('#save-route').onclick=()=>{if(!route)return;try{localStorage.setItem(SAVED,JSON.stringify({version:2,networkVersion:route.networkVersion,points:route.points,profile:route.style,pace:route.pace,needs:route.needs}));renderSaved();announce('Journey endpoints and preferences saved on this device. The route will be recalculated when opened.');}catch{announce('Your browser could not save this journey. You can download its text instead.');}};
+$('#load-saved').onclick=()=>{
+ cancelLocate();const spec=readSaved();if(!spec){announce('This saved journey could not be opened. Choose new endpoints.');return;}
+ if(spec.legacy){invalidateJourney();journeyPoints={start:null,end:null};$('#origin-text').value='';$('#destination-text').value='';resizeJourneyInputs();$('#routing-status').textContent=`This is an old illustrative journey (${spec.origin||'unknown start'} → ${spec.destinationLabel||'unknown destination'}). Choose both endpoints on the map or select sample places, then calculate a real network route.`;$('#choose-start-map').focus();return;}
+ setJourneyPoint('start',spec.points.start);setJourneyPoint('end',spec.points.end);$(`input[name="route-style"][value="${spec.profile}"]`).checked=true;ui.setChoice('pace',spec.pace);$$('input[name="needs"]').forEach(c=>c.checked=spec.needs.includes(c.value));calculateJourney();
+};
 $('#delete-saved').onclick=()=>{try{localStorage.removeItem(SAVED);}catch{}$('#journey-title').focus();renderSaved();announce('Saved journey removed from this device.');};
-$('#place-dialog-body').addEventListener('click',e=>{const b=e.target.closest('[data-plan-place]');if(!b)return;const p=D.places.find(x=>x.id===b.dataset.planPlace);if(!p)return;$('#destination-text').value=p.name;$('#destination').value='library';$('#place-dialog').close();location.hash='journey';});
+$('#place-dialog-body').addEventListener('click',e=>{const b=e.target.closest('[data-plan-place]');if(!b)return;const p=D.places.find(x=>x.id===b.dataset.planPlace);if(!p)return;setJourneyPoint('end',{coords:p.coordinates,label:p.name,kind:'sample'});$('#place-dialog').close();location.hash='journey';});
 // Speech is opt-in, never an essential channel, and always stoppable.
 function restoreSpeechFocus(){if($('#speech-bar').contains(document.activeElement)){if(lastSpeechTrigger?.isConnected&&!lastSpeechTrigger.closest('[hidden]'))lastSpeechTrigger.focus();else $(`#${currentView}-title`).focus();}}
 function stopSpeech(){restoreSpeechFocus();if('speechSynthesis'in window)window.speechSynthesis.cancel();speechJob=null;$('#speech-bar').hidden=true;}
@@ -439,7 +541,7 @@ $('#factory-reset').onclick=()=>{
  resetMapUI();cancelLocate();stopSpeech();
  $$('dialog[open]').forEach(d=>d.close());lastDialogTrigger=null;lastSpeechTrigger=null;
  for(const key of [SETTINGS,SAVED,'access-adelaide-support-v2']){try{localStorage.removeItem(key);}catch{}}
- settings={...defaults};route=null;stepIndex=0;pendingRouteMap=false;
+ invalidateJourney();settings={...defaults};route=null;stepIndex=0;pendingRouteMap=false;journeyPoints={start:null,end:null};endMapSelection(false,false);
  $('#journey-form').reset();$('#feedback-form').reset();$('#feedback').setCustomValidity('');
  $$('#communication,#quick-card-editor').forEach(e=>e.value='');
  $$('#route-summary,#step-guide,#saved-title,#communication-text,#quick-card-text,#feedback-status').forEach(e=>e.textContent='');

@@ -61,12 +61,13 @@ git_cmd config pull.rebase true
 git_cmd config fetch.prune true
 git_cmd config push.default simple
 
-# Explicit source allowlist excludes credentials, archives and upcoming routing inputs.
+# Explicit source allowlist excludes credentials and local handoff archives.
 source_paths=(
   .gitignore AGENTS.md README.md ACCESSIBILITY.md VALIDATION.md
   index.html app.js support-ui.js map-engine.js platform-guide.js data.js
   mock_points.geojson icon.svg styles.css ui-controls.js ui-controls.css
   setup-shortcuts.css toolbar.css map-controls.css press-hints.js press-hints.css
+  routing-engine.js routing-data.js routing.css data
   scripts vendor "User review update 1.md"
 )
 rtk proxy node scripts/check-ui-contracts.cjs

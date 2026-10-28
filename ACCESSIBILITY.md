@@ -171,3 +171,12 @@ No authentication exists, so accessible-authentication requirements are not demo
 - [MapLibre GL JS API](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/)
 
 References guide the design. They do not certify this implementation.
+
+
+## Local walking routes (2026-10-28)
+
+Journey now resolves explicit coordinates from map selection, known sample places or optional GPS. Unknown prose never silently becomes a location. Map selection reuses Explore and provides a centre crosshair, pan buttons, confirmation, cancellation and focus recovery; denied GPS does not block these alternatives.
+
+Shortest, Fastest and Step-free (provisional) are visible native radio cards. The latter only excludes recorded stairs and escalators; kerb ramps, gradients, width, surfaces, crossings and facilities are unverified. Unsupported needs remain explicitly unchecked preferences. Snapping offsets and the 50-metre limit are disclosed; disconnected and outside-coverage requests fail without fabricated geometry.
+
+Route results, approximate directions, speech and exports share calculated network data. Saved endpoints are versioned and recalculated; older illustrative journeys need explicit point selection. Route calculations yield to the event loop and obsolete results cannot move focus after navigation, map selection or reset. Runtime data loads as a local classic script, including file://. Large-type/dark-contrast layout was exercised in Firefox at 320/390/412 px and desktop; no physical TalkBack/VoiceOver or iPhone certification is claimed.

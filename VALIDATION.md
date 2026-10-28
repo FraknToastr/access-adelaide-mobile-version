@@ -1,3 +1,21 @@
+# Local routing validation — 2026-10-28
+
+This section describes the current separate-file routing build. Earlier sections below document previous mock-journey builds and their historical test results.
+
+- `rtk proxy node scripts/test-routing.cjs`: all 9 test groups pass. Synthetic fixtures cover same-edge partial journeys in both directions, preserved interior vertices, real turns, alternate costs, all public exclusions, Stairs/Esculator filtering, the 50 m snap limit, nearest eligible segments, disconnected networks, unconnected crossings/near contacts, fallback endpoint keys, identical points, cancellation and immutable repeated queries.
+- Nine real-network calculations match an independent queue-relaxation reference solver built from the raw GeoJSON, across Shortest/Fastest/Step-free. Representative node 3 → 2263 results: Shortest 999.8 m / 25.55 min; Fastest 1001.1 m / 25.49 min at 50 m/min personalised pace. Node 3 → 3781: Shortest 5003.8 m / 116.11 min; Fastest 5035.1 m / 115.00 min. These are modelled moving times, not measured journeys.
+- Supplied baseline validated: 7,280 edges, 5,168 nodes, 14 components, 7,245 edges in the largest component, 396,098.186 m total source length, 35 exact path types. Default profiles exclude 290 edges; provisional Step-free excludes 437. Runtime graph is approximately 1.11 MB versus 3.05 MB source GeoJSON.
+- `rtk proxy node scripts/build-routing-data.cjs --check`: generated network matches the committed source and converter output. Source fingerprint/network version: `c014dda572d9b88ae`.
+- `scripts/test-routing-browser.cjs`: Firefox tests verify real calculated routes (Railway Station entrance → Cultural precinct toilet: 773.6 m / 18.8 min at 50 m/min), unresolved text, map endpoint selection/pan/confirmation/cancellation, GPS denial, save/reload/legacy confirmation, calculated text download, route endpoints/Fit route, navigation/reset cancellation races, secret reset retaining the key, and local-file routing with external requests blocked. Layout checks cover 320/390/412 px and 1024 px at 150% text in Dark Contrast Mode. Full onboarding, category filtering, large-map/legend layout, navigation disclosure and the Help communication card also pass.
+- `scripts/test-routing-map.cjs`: actual Firefox 2D renderer checks taps, drag and button exclusion, offline network visibility and route endpoint persistence across renderer restart. A MapLibre test double verifies native map lifecycle, click selection and overlay state; this is not a live WebGL rendering certification.
+- `rtk proxy node scripts/check-ui-contracts.cjs`, JavaScript syntax checks, shell syntax and `git diff --check` pass.
+
+The browser scripts accept `PLAYWRIGHT_MODULE` (package directory) and `FIREFOX_EXECUTABLE` (browser executable). During validation these were `/home/n0rt/.nvm/versions/node/v22.23.2/lib/node_modules/@playwright/test` and `/home/n0rt/.cache/ms-playwright/firefox-1532/firefox/firefox`. Both scripts can also use a normal local Playwright installation. No new runtime packages are required.
+
+Physical Android/iPhone testing, TalkBack/VoiceOver review, live authenticated MetroMap imagery, real WebGL performance on a phone, footpath topology inspection and accessibility verification remain outstanding. The 72 reported interior crossings are deliberately not joined. No standalone HTML or distributable ZIP was generated in this phase.
+
+---
+
 # Validation record — v2.0
 
 27 October 2026. This records the checks completed, not a conformance certificate.

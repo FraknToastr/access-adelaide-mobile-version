@@ -2,11 +2,11 @@
 
 A needs-based setup, large category choices, persistent access tools and a MapLibre map with a real 2D raster fallback.
 
-**All point locations, facility descriptions, route shapes, distances and timings are invented examples. Destination text is not geocoded. This is not a real navigation service.**
+**Place points and facility descriptions remain mock examples. Journey routes, distances and estimated travel times are now calculated from the supplied walking network. Accessibility, availability and entrances are unverified. Destination text is not geocoded. This is a test prototype, not a verified navigation service.**
 
 ## Open it
 
-Extract the complete ZIP and open `index.html`. Keep the adjacent scripts, stylesheet and `vendor` folder together. There is no build step or package installation. The core mockup works from the extracted files; Locate me needs a browser that permits geolocation in the current context, normally HTTPS or localhost. The hosted prototype is private; the extracted app itself does not need an account.
+Open `index.html` in the complete source folder. Keep the adjacent scripts, stylesheet and `vendor` folder together. There is no build step or package installation. The app and local routing engine work from the adjacent files without a server; Locate me needs a browser that permits geolocation in the current context, normally HTTPS or localhost. No account is required. Single-file HTML and ZIP packaging are deferred.
 
 The first visit opens setup at 150% text with high contrast and reduced movement. Supported app text sizes are 100%, 125% and 150%; remembered 200% preferences are migrated to 150%. Choices can be changed later from **Access → Change my setup**.
 
@@ -38,9 +38,27 @@ Use **Tiles**, **One at a time** or **List choices**. The one-at-a-time view inc
 
 There are 14 mock points across 10 map layers. A category filters both map and list. **Show all mock places** restores the full set. The initial home view is list-first, with the map available from **Map**.
 
-The Journey form accepts your own starting-place and destination descriptions. Both fields wrap and grow with their contents and text settings. **Locate me**, between the fields, requests a single real location fix only when pressed. It fills the starting label with coordinates; manual entry remains available if permission is declined or location is unavailable. Permission prompts and acquisition can take time; the acquisition timeout is 10 seconds. A manual edit, submitted form, loaded plan, reset or navigation cancels use of a pending result.
+## Calculate a walking-network journey
 
-The output demonstrates presentation only: the shape and distance are fixed examples, not a route calculated for those words or coordinates. **Read Steps**, beside Written directions, speaks only the numbered directions. Stop reading and the selected reading speed remain available.
+Choose start and destination using the map, the inline sample-place lists, an exact known sample name, or optional one-shot GPS for the start. Unrecognised text does not become coordinates. Editing a resolved label clears its stored coordinate association. GPS denial or an unavailable secure context leaves map and sample-place selection available.
+
+**Choose start on map** and **Choose destination on map** reuse Explore's map. Tap to position the crosshair, or use **Move Map** and its directional buttons, then **Use this location**. Cancel or Escape keeps the previous endpoint. Offline selection shows eligible walking paths. **See on map** and **Fit route** display the calculated line and distinct start/end markers in both renderers.
+
+Choose **Shortest** (default), **Fastest**, or **Step-free (provisional)**. All exclude Private Path, Unofficial Path, Timed Path, Timed Underpass and every proposed crossing type. Step-free also excludes the source categories Stairs and Esculator. It does not establish wheelchair accessibility. Rest, shade, quietness, kerb ramps, surfaces, widths and facilities are not optimised or checked.
+
+Each endpoint snaps to its nearest eligible polyline segment within **50 metres**. Distances include only traversed path subsegments, including same-edge partial journeys. Snapping offsets are disclosed separately and are not verified connecting paths. Disconnected or out-of-coverage endpoints produce explanations; there is no straight-line or illustrative fallback.
+
+Shortest and Step-free minimise source metres. Fastest minimises `Shape_Length / Speed` (Speed is metres/second). Personalised moving time is the sum of those seconds, multiplied by `1.39 / (chosen pace / 60)`; the pace choices remain 35/50/70 metres per minute. This retains source speed penalties but is not a measured travel time. Rest time is additional. Walktime is not used.
+
+Written turns are approximate and derived from the traversed geometry. **Read Steps**, save and text download use the calculated result. Saved journeys contain versioned endpoint coordinates and preferences, and are recalculated when opened. Older illustrative saves require explicit endpoint selection before calculation. No automatic GPS tracking, remote routing or geocoding is added.
+
+### Network and reproducible conversion
+
+The WGS84 input in `data/walking-pathways.geojson` was extracted unchanged from the supplied routing handoff. It contains 7,280 paths, 5,168 endpoint nodes, 14 components and approximately 396.1 km; the largest component contains 7,245 paths. These are unfiltered source counts. Default profiles exclude 290 edges; provisional step-free excludes 437. Exact path types and exclusion counts are available from the engine statistics.
+
+Topology uses FromNode/ToNode; endpoints consistently rounded to eight decimals are a fallback for exports without IDs. Interior crossings and nearby junctions are never connected automatically. Every intermediate vertex is retained. Source topology and accessibility remain unvalidated, including the handoff's 72 interior crossings.
+
+Run `rtk proxy node scripts/build-routing-data.cjs` to regenerate the compact classic-script runtime graph, or append `--check` to verify reproducibility. It records source SHA-256 and baseline counts and rejects an unexpected dataset rather than silently repairing it. The engine loads the generated script locally without fetch, CDN, routing services or a build step for users.
 
 ## Keep tools close
 
@@ -106,23 +124,26 @@ Each feature distinguishes what becomes possible, which permission/user action i
 
 ## Offline and privacy
 
-The ZIP bundles the app, MapLibre and mock/schematic data. Lists, cards and written steps can work without online maps. Real MetroMap/Esri tiles need internet. The hosted version is not currently an installed offline PWA and has no service worker or real offline map package.
+The source folder bundles the app, MapLibre, mock/schematic data and the compact walking graph. Lists, cards, routing and written steps work without online maps. Real MetroMap/Esri tiles need internet. The hosted version is not currently an installed offline PWA and has no service worker or real offline map package.
 
-No analytics, automatic GPS, microphone capture, voice recognition or background navigation. The only GPS request is the one-shot Locate me action. Its coordinates remain in the current form unless you explicitly save a journey containing that starting label. Browser speech may use local or remote voices, depending on the device. Motion is read only after the user enables the optional control, and is not recorded or transmitted.
+No analytics, automatic GPS, microphone capture, voice recognition or background navigation. The only GPS request is the one-shot Locate me action. Its coordinates remain in the current form unless you explicitly save a journey containing that endpoint. Browser speech may use local or remote voices, depending on the device. Motion is read only after the user enables the optional control, and is not recorded or transmitted.
 
 Settings and cards are remembered only when chosen. Browser storage can be unavailable or cleared. Use **Help → Privacy & stored information → Clear saved setup, settings & journey** to clear the saved profile, access settings, journey and imagery key.
 
 ## Source layout
 
 - `index.html`: semantic interface, setup shell, dialogs and inline Help guide.
-- `app.js`: navigation, access settings, written mock journeys, exports and speech.
+- `app.js`: navigation, access settings, calculated journeys, endpoint selection, exports and speech.
 - `support-ui.js`: onboarding, shortcut drawers, profiles, categories, tools and optional category inputs.
 - `ui-controls.js` / `ui-controls.css`: visible radio-card choices and shared reduced-motion-aware drawers.
 - `setup-shortcuts.css`: shortcut chooser and icon-only row.
 - `map-controls.css`: compact controls, stacked map layout and full page-flow legend.
 - `toolbar.css`: responsive tool/navigation rows and centered SVG controls.
 - `press-hints.js` / `press-hints.css`: optional pointer, focus and keyboard hints.
-- `map-engine.js`: MapLibre, 2D tiles, provider failover and key configuration.
+- `map-engine.js`: MapLibre, 2D tiles, provider failover, point selection and route overlays.
+- `routing-engine.js` / `routing-data.js`: local graph routing and generated compact network.
+- `routing.css`: Journey controls and map-selection styling.
+- `data/walking-pathways.geojson`: unchanged WGS84 routing input; `scripts/build-routing-data.cjs` regenerates the runtime data.
 - `platform-guide.js`: browser/PWA/iPhone/Android comparisons and source links.
 - `data.js` / `mock_points.geojson`: invented examples and local geometry.
 - `styles.css`: mobile layout, themes, focus states and reflow.

@@ -1,0 +1,26 @@
+/* Journey additions share the existing app palette, type and target sizes. */
+.routing-actions{display:flex;flex-wrap:wrap;gap:10px}
+.routing-actions>button{flex:1 1 9rem;min-width:0}
+.routing-samples{margin-top:12px}
+.routing-samples summary{min-height:var(--target);padding:10px 0;cursor:pointer;font-weight:700}
+.routing-samples>div{display:grid;gap:8px;margin:8px 0}
+.routing-samples button{text-align:left;justify-content:flex-start;min-width:0;width:100%}
+.journey-location-field>button{margin-top:10px}
+.routing-status:not(:empty){border:1px solid var(--border);border-radius:14px;background:var(--soft);padding:14px;margin:16px 0}
+.routing-disclaimer{margin:12px 0 16px}
+.routing-selection{padding:14px;margin:0 0 12px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.routing-selection p{margin:10px 0}
+.routing-selection h2{overflow-wrap:anywhere}
+#selection-crosshair{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;display:grid;place-items:center;pointer-events:none;border-radius:50%;background:#fff;color:#000;border:3px solid #000;font:700 30px/1 Arial,sans-serif;box-shadow:0 0 0 3px #fff}
+#fit-route{margin-bottom:10px}
+.route-snap-info{margin-top:14px;font-size:.85rem}
+.route-caveat ul{padding-left:1.2em}
+.route-card .route-stats>div{min-width:0}
+.route-options .radio-card>span:not([data-icon]){min-width:0}
+body.choosing-route-location .map-topbar{pointer-events:none}
+body.choosing-route-location .map-topbar button{pointer-events:auto}
+body.big-map.choosing-route-location{overflow:auto}
+body.big-map.choosing-route-location .app-shell{height:auto;min-height:100dvh;display:block}
+body.big-map.choosing-route-location #map-panel{height:auto;display:block}
+body.big-map.choosing-route-location .map-wrap{height:40dvh;min-height:180px}
+@media print{.routing-selection,.routing-samples,#fit-route{display:none!important}}
