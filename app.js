@@ -14,7 +14,7 @@ locate:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M
 taxi:'<path d="m5 6-2 7v7h3v-3h12v3h3v-7l-2-7H5ZM3 12h18M9 6V3h6v3M6 14h2M16 14h2"/>',
 route:'<circle cx="5" cy="6" r="3"/><circle cx="19" cy="18" r="3"/><path d="M8 6h8a4 4 0 0 1 0 8H8a4 4 0 0 0 0 8h8"/>',
 access:'<circle cx="12" cy="4" r="2"/><path d="m4 9 8 2 8-2M12 11v5m0 0-5 6m5-6 5 6"/>',
-'arrow-right':'<path d="M5 12h14m-6-6 6 6-6 6"/>',
+'arrow-right':'<path d="M3 12h18m-7-7 7 7-7 7"/>',
 map:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15"/>',
 list:'<path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/>',
 plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
