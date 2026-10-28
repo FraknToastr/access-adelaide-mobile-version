@@ -67,7 +67,7 @@ source_paths=(
   index.html app.js support-ui.js map-engine.js platform-guide.js data.js
   mock_points.geojson icon.svg styles.css ui-controls.js ui-controls.css
   setup-shortcuts.css toolbar.css map-controls.css press-hints.js press-hints.css
-  routing-engine.js routing-data.js routing.css data
+  routing-engine.js routing-data.js routing.css data standalone
   scripts vendor "User review update 1.md"
 )
 rtk proxy node scripts/check-ui-contracts.cjs

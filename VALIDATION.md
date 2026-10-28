@@ -1,6 +1,43 @@
+# Standalone distribution validation — 2026-10-28
+
+The generated downloads contain the current separate-source updates, including inline Journey selection, Travel Mode labels, optional tool shortcuts when skipping setup, Reset Demo and the 100%/125% Dyslexic scale.
+
+- `standalone/Access_Adelaide.html`: 2,731,001 bytes. `standalone/Access_Adelaide.zip`: 890,542 bytes. The ZIP contains exactly one member, `Access_Adelaide.html`, identical to the generated HTML.
+- `rtk proxy node scripts/build-standalone.cjs --check` passes: source hashes, compact graph, generated HTML, deterministic ZIP and inline-script syntax are current.
+- `scripts/test-standalone.cjs` passes after extracting the ZIP into an otherwise empty temporary folder. External requests are blocked; no local sidecar file is requested. Embedded shortcut logos load, font metrics are available, licences are present, a map-selected journey calculates 774 m, the phone-settings choice adds no tools, Travel Mode labels are current and Reset Demo retains the map key.
+- The full routing browser and Dyslexic scale suites pass against the extracted HTML, served through an entry-only HTTP fixture and directly through file:// where applicable. Coverage includes setup, saved journeys, map/GPS selection, cancellation, Explore state, font migration, narrow layouts and offline operation.
+- The routing engine's 9 test groups, UI contracts and whitespace checks pass. Runtime files are embedded without CDN dependencies; online basemap imagery and explicitly opened external links retain their network requirements. The build uses only Node and Python standard libraries.
+
+Browser evidence remains Firefox headless with actual 2D rendering. Previous MapLibre lifecycle checks use a test double; this is not a live WebGL or physical iPhone/Android accessibility certification. See the earlier sections for source topology and accessibility limitations.
+
+---
+
+# Dyslexic text scale validation — 2026-10-28
+
+These checks were recorded before generating the standalone distribution.
+
+- `scripts/test-dyslexic-scale-browser.cjs` passes in Firefox using the embedded OpenDyslexic fonts. It checks enabling from 100%/125%/150%, preserving 100%, capping larger values at 125%, two-step cycling and labels throughout setup, and restoring normal font choices without increasing the selected size.
+- Access and Text & contrast hide and disable 150% and label 125% as largest. Presets, Seeing suggestions, remembered settings and remembered support profiles cannot restore Dyslexic 150%; migrated sizes persist across reloads.
+- At 320/390/412 px, both Dyslexic sizes pass landing, Journey map, toolbar/navigation, dialog and icon containment checks with dark contrast, reading spacing and reduced motion. Dyslexic 125% uses the largest-text layouts; Journey's Move Map control spans a full row to keep its label readable.
+- Syntax, UI contracts and whitespace checks pass. Browser zoom remains independent of the app's two Dyslexic sizes. Physical phone assistive-technology testing is not claimed.
+
+---
+
+# Inline Journey map validation — 2026-10-28
+
+These checks describe the inline-map source update included in the standalone distribution.
+
+- Updated Firefox integration tests pass for inline map ownership, unchanged Journey URL, one reused map instance, both choices above the map, confirmation controls below the canvas, and Locate me inside the map only for start selection.
+- GPS success remains provisional until confirmed. Denial and stale success callbacks after switching endpoint, panning, cancelling and navigation are handled. Collapsed summaries, cancelled edits, old saved coordinate journeys, legacy illustrative saves, calculated downloads and out-of-coverage failures pass.
+- Explore's previous map/list choice, mock markers, Large Map/Legend, setup, navigation disclosure and Help communication card pass regression checks.
+- Layout checks cover 320/390/412 px at 100%/125%/150% text with dark contrast and reduced motion. Offline file:// routing, calculation cancellation and factory reset preserving the map key pass. The requested Test network only paragraph and Journey sample-location choices are absent.
+- Engine's 9 test groups, reproducible data check, map adapter tests, UI contracts, source syntax and whitespace checks pass. Physical iPhone/Android assistive-technology testing and live WebGL certification remain outside these automated checks.
+
+---
+
 # Local routing validation — 2026-10-28
 
-This section describes the current separate-file routing build. Earlier sections below document previous mock-journey builds and their historical test results.
+This section records the initial separate-file routing build. The inline-map update above supersedes its earlier endpoint-entry UI; routing engine results remain applicable.
 
 - `rtk proxy node scripts/test-routing.cjs`: all 9 test groups pass. Synthetic fixtures cover same-edge partial journeys in both directions, preserved interior vertices, real turns, alternate costs, all public exclusions, Stairs/Esculator filtering, the 50 m snap limit, nearest eligible segments, disconnected networks, unconnected crossings/near contacts, fallback endpoint keys, identical points, cancellation and immutable repeated queries.
 - Nine real-network calculations match an independent queue-relaxation reference solver built from the raw GeoJSON, across Shortest/Fastest/Step-free. Representative node 3 → 2263 results: Shortest 999.8 m / 25.55 min; Fastest 1001.1 m / 25.49 min at 50 m/min personalised pace. Node 3 → 3781: Shortest 5003.8 m / 116.11 min; Fastest 5035.1 m / 115.00 min. These are modelled moving times, not measured journeys.

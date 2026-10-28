@@ -6,11 +6,22 @@ A needs-based setup, large category choices, persistent access tools and a MapLi
 
 ## Open it
 
-Open `index.html` in the complete source folder. Keep the adjacent scripts, stylesheet and `vendor` folder together. There is no build step or package installation. The app and local routing engine work from the adjacent files without a server; Locate me needs a browser that permits geolocation in the current context, normally HTTPS or localhost. No account is required. Single-file HTML and ZIP packaging are deferred.
+Open `index.html` in the complete source folder. Keep the adjacent scripts, stylesheet and `vendor` folder together. There is no build step or package installation. The app and local routing engine work from the adjacent files without a server; Locate me needs a browser that permits geolocation in the current context, normally HTTPS or localhost. No account is required. A generated single-file version is also available below.
 
-The first visit opens setup at 150% text with high contrast and reduced movement. Supported app text sizes are 100%, 125% and 150%; remembered 200% preferences are migrated to 150%. Choices can be changed later from **Access → Change my setup**.
+The first visit opens setup at 150% text with high contrast and reduced movement. Normal-font app text sizes are 100%, 125% and 150%. Dyslexic font supports only 100% and 125%; enabling it preserves an existing 100% and reduces larger sizes to 125%. Remembered 200% preferences migrate to the selected font’s maximum. Choices can be changed later from **Access → Change my setup**.
 
 **Use my phone's settings** opens the initial Explore page with 100% text, the light theme and all mock places shown.
+
+## Standalone download and build
+
+- [Standalone HTML](standalone/Access_Adelaide.html): open this one file directly.
+- [Standalone ZIP](standalone/Access_Adelaide.zip): contains exactly `Access_Adelaide.html`, with no required sidecar files.
+
+The generated HTML embeds the current scripts, styles, walking graph, regular/bold OpenDyslexic fonts, favicon, shortcut logos and third-party licence notices. Local routing and the interface work offline; online imagery, external app links and device permissions retain their normal requirements. No map key or browser-stored user data is copied into the build.
+
+Keep editing the separate source files. Run `rtk proxy node scripts/build-standalone.cjs` to regenerate both downloads, or append `--check` to verify that they match the source. The build uses Node and Python 3 standard libraries. Source hashes and licence notices are embedded as non-executable JSON; ZIP contents and timestamps are deterministic.
+
+With the existing Playwright/Firefox environment configured, `rtk proxy node scripts/test-standalone.cjs` verifies the ZIP and opens its HTML in an isolated folder with external requests blocked. It also runs the routing and Dyslexic browser suites against that extracted file. `APP_HTML` can point those individual suites at another HTML entry; their HTTP fixture serves only that entry in this mode.
 
 ## Set up the support you want
 
@@ -24,7 +35,7 @@ The first visit opens setup at 150% text with high contrast and reduced movement
 
 Text/contrast controls, Hear this page and a communication card are available from the opening screen. The app changes its own interface; it does not change the phone’s global accessibility settings.
 
-The fifth control, **Dyslexic font**, toggles OpenDyslexic throughout the app. Its label always previews the font. Regular and bold OpenDyslexic fonts are embedded in `styles.css`, so they work offline without installing a font or contacting a font service. The option starts off and is saved only with your remembered setup. Access reset and the secret Demo only reset turn it off; the secret reset keeps your map key and imagery settings.
+The fifth control, **Dyslexic font**, toggles OpenDyslexic throughout the app. Its label always previews the font. Regular and bold OpenDyslexic fonts are embedded in `styles.css`, so they work offline without installing a font or contacting a font service. The option starts off and is saved only with your remembered setup. While enabled, the resize button alternates 125% (**Smaller Text**) and 100% (**Bigger Text**) across setup screens. Access and Text & contrast hide the 150% choice and label 125% as largest. Turning Dyslexic font off retains the chosen percentage and restores the normal three sizes. Presets, setup suggestions and remembered profiles follow the same cap. Access reset and the secret Demo only reset turn it off; the secret reset keeps your map key and imagery settings.
 
 OpenDyslexic is by Abbie Gonzalez, licensed under SIL OFL 1.1. The bundled copyright and licence are in `vendor/OPENDYSLEXIC-LICENSE.txt`; `vendor/OPENDYSLEXIC-SOURCES.md` records the original font blobs.
 
@@ -40,9 +51,11 @@ There are 14 mock points across 10 map layers. A category filters both map and l
 
 ## Calculate a walking-network journey
 
-Choose start and destination using the map, the inline sample-place lists, an exact known sample name, or optional one-shot GPS for the start. Unrecognised text does not become coordinates. Editing a resolved label clears its stored coordinate association. GPS denial or an unavailable secure context leaves map and sample-place selection available.
+On **Let's get you there**, choose **Choose start on map** or **Choose destination on map**. Both buttons sit above a shared inline map; selection stays on Journey. Tap to move the crosshair, or use Move Map and its directional buttons, then confirm with **Use this start** or **Use this destination**. Switching endpoints or cancelling discards only the draft selection. Read-only **Selected locations** summaries start collapsed. There are no Journey sample-place lists or address-entry fields; Explore's illustrative places remain available.
 
-**Choose start on map** and **Choose destination on map** reuse Explore's map. Tap to position the crosshair, or use **Move Map** and its directional buttons, then **Use this location**. Cancel or Escape keeps the previous endpoint. Offline selection shows eligible walking paths. **See on map** and **Fit route** display the calculated line and distinct start/end markers in both renderers.
+**Locate me** appears on the map only while choosing the start. It requests a single GPS fix, positions the crosshair and waits for **Use this start** before committing it. Moving the map, switching endpoints, cancelling or leaving Journey invalidates pending GPS results. GPS denial leaves tapping and map movement available. No automatic GPS tracking is added.
+
+The map remains visible after confirmation with start/end markers. Offline it shows the eligible walking network. **See on map** and **Fit route** show the calculated journey inline. One renderer is reused between Journey and Explore; returning to Explore restores its previous map/list choice, mock markers, Large Map and Legend controls.
 
 Choose **Shortest** (default), **Fastest**, or **Step-free (provisional)**. All exclude Private Path, Unofficial Path, Timed Path, Timed Underpass and every proposed crossing type. Step-free also excludes the source categories Stairs and Esculator. It does not establish wheelchair accessibility. Rest, shade, quietness, kerb ramps, surfaces, widths and facilities are not optimised or checked.
 
@@ -148,6 +161,7 @@ Settings and cards are remembered only when chosen. Browser storage can be unava
 - `data.js` / `mock_points.geojson`: invented examples and local geometry.
 - `styles.css`: mobile layout, themes, focus states and reflow.
 - `vendor/`: pinned MapLibre distribution and licence.
+- `standalone/`: generated single-file HTML and one-file ZIP; regenerate with `scripts/build-standalone.cjs`.
 
 ## UI rules and checks
 

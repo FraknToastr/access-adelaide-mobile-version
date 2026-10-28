@@ -18,4 +18,5 @@ Thumbs.db
 
 # Local handoffs and generated distribution archives
 *.zip
+!/standalone/Access_Adelaide.zip
 /Walking_Pathways.geojson

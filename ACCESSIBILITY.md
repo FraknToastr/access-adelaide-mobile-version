@@ -180,3 +180,22 @@ Journey now resolves explicit coordinates from map selection, known sample place
 Shortest, Fastest and Step-free (provisional) are visible native radio cards. The latter only excludes recorded stairs and escalators; kerb ramps, gradients, width, surfaces, crossings and facilities are unverified. Unsupported needs remain explicitly unchecked preferences. Snapping offsets and the 50-metre limit are disclosed; disconnected and outside-coverage requests fail without fabricated geometry.
 
 Route results, approximate directions, speech and exports share calculated network data. Saved endpoints are versioned and recalculated; older illustrative journeys need explicit point selection. Route calculations yield to the event loop and obsolete results cannot move focus after navigation, map selection or reset. Runtime data loads as a local classic script, including file://. Large-type/dark-contrast layout was exercised in Firefox at 320/390/412 px and desktop; no physical TalkBack/VoiceOver or iPhone certification is claimed.
+
+
+## Inline Journey map selection
+
+Journey's start and destination buttons reveal one inline map without navigation. A collapsed Selected locations section contains read-only summaries; Journey no longer offers sample-place lists or text entry. Confirm/cancel actions sit below the canvas. The map's accessible label names the active endpoint; initial picker focus starts at the map so Locate me is reachable by forward Tab. Escape cancels only the draft and restores the invoking button.
+
+Locate me is an on-map action visible only during start selection. GPS is provisional until confirmation, and late results are ignored after endpoint changes, pointer/pan interaction, cancellation, navigation or reset. The centre crosshair remains above endpoint markers. Explore retains its independent map/list choice and mock-point controls when the shared renderer returns there.
+
+
+## Dyslexic text-size range
+
+OpenDyslexic uses only 100% and 125% app text sizes. Enabling it preserves 100% when selected and caps 150%/legacy 200% at 125%. The resize button cycles directly between 125% (Smaller Text) and 100% (Bigger Text). Disabling it keeps the current size and restores the normal three choices.
+
+Both settings panels hide and disable unavailable radio options, synchronise the selected size and restore focus if a focused option becomes unavailable. Dyslexic 125% uses the app's largest-text layouts; presets, needs suggestions and remembered profiles all apply the shared size policy. Browser zoom remains available.
+
+
+## Standalone distribution
+
+The generated standalone HTML retains the source interface and accessibility controls. Scripts run in their original order after the body is parsed; fonts and shortcut artwork are embedded, and third-party notices remain in non-executable JSON. The archive contains one HTML file. Source and generated entries share the same browser regression suites, with additional isolated file:// checks preventing fallback to neighbouring assets.

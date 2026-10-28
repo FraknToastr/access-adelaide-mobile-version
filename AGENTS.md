@@ -7,7 +7,9 @@
 - App shortcuts show only icons in one row, with accessible names. They have no visible labels or headline.
 - Main navigation always keeps Explore, Journey, Access and Help in a single row, including larger text, OpenDyslexic and reading spacing. Labels may wrap within their own buttons.
 - The map canvas sits above its control panel. Do not overlay the panel over the canvas. The full legend expands in page flow and may resize the canvas; keep navigation reachable while it is open.
-- App text sizes are 100%, 125% and 150%; 150% is the default and maximum. Migrate saved 200% preferences to 150%.
+- Normal-font app text sizes are 100%, 125% and 150%; 150% is the first-run default and maximum. Dyslexic font permits only 100% and 125%; preserve 100% when enabled and cap larger saved/requested sizes at 125%. Its resize button alternates Smaller Text at 125% and Bigger Text at 100%. Use the shared text-scale rules for settings, presets, onboarding, saved profiles and layout states. Migrate saved 200% to the maximum allowed by the chosen font.
 - Navigation disclosure arrows must use centered SVG icons, never text caret characters. Center icon/label content explicitly across browsers.
 - The secret Demo only factory reset must preserve the map key and imagery configuration.
 - Run `rtk proxy node scripts/check-ui-contracts.cjs` after UI changes, alongside relevant browser checks.
+
+- Keep editing the separate source files. When updating the standalone distribution, run `rtk proxy node scripts/build-standalone.cjs`, then `--check` and the standalone browser checks. Track only the generated `standalone/Access_Adelaide.html` and `standalone/Access_Adelaide.zip`; the ZIP must contain exactly that one HTML file. Never bundle private agent configuration, credentials, browser storage or local handoff archives.
