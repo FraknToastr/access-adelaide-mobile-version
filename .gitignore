@@ -1,0 +1,21 @@
+# Local agent configuration and credentials
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies, test output and OS metadata
+node_modules/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Local handoffs and generated distribution archives
+*.zip
+/Walking_Pathways.geojson

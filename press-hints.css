@@ -1,0 +1,4 @@
+/* Optional descriptions inherit the active app or dialog's reading preferences. */
+#access-long-press-tip{position:fixed;z-index:4000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:hidden;margin:0;padding:10px 12px;border:2px solid var(--text,#183f38);border-radius:12px;background:var(--surface,#fff);color:var(--text,#183f38);font:inherit;font-weight:700;line-height:1.4;white-space:normal;overflow-wrap:anywhere;box-shadow:0 4px 18px #0004}
+#access-long-press-tip[hidden]{display:none!important}
+@media(forced-colors:active){#access-long-press-tip{background:Canvas;color:CanvasText;border-color:CanvasText;box-shadow:none}}

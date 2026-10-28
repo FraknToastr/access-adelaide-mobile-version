@@ -1,0 +1,45 @@
+/* Content-fitting, centered mobile access toolbar. */
+#support-dock,#support-dock[data-mode=dock],#support-dock[data-mode=floating]{display:block;padding:8px;min-width:0;border-bottom:1px solid var(--border);background:var(--soft)}
+#support-dock .access-tool-row{display:grid;grid-template-columns:repeat(var(--tool-columns,2),minmax(0,1fr)) var(--toolbar-target,48px);grid-auto-rows:minmax(var(--toolbar-target,48px),auto);gap:8px;min-width:0;width:100%}
+#support-dock .access-tool-row[data-navigation=false]{grid-template-columns:repeat(var(--tool-columns,2),minmax(0,1fr))}
+#support-dock .access-tool-row[data-empty=true]{display:flex;justify-content:flex-end}
+#support-dock .access-tool-row>button{display:grid;place-items:center;box-sizing:border-box;width:100%;height:100%;min-width:0;max-width:none;min-height:var(--toolbar-target,48px);max-height:none;flex:none;padding:8px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);box-shadow:none;overflow:visible}
+#support-dock .access-tool-row .tool-button-content{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;min-width:0;text-align:center}
+#support-dock .access-tool-row .tool-icon{display:grid;place-items:center;flex:none;width:32px;height:32px;min-width:32px;min-height:32px;font-size:0;line-height:0}
+#support-dock .access-tool-row .tool-icon svg{display:block;width:32px;height:32px;min-width:32px;min-height:32px;margin:0;flex:none}
+#support-dock .access-tool-row .dock-tool-label{display:block;max-width:100%;min-width:0;margin:0;font-size:.65rem;font-weight:700;line-height:1.65;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal}
+#support-dock .access-tool-row>.navigation-toggle{grid-column:auto;grid-row:auto;width:100%;height:100%;max-width:none;min-width:0;padding:4px;flex:none}
+#support-dock .access-tool-row[data-empty=true]>.navigation-toggle{width:var(--toolbar-target,48px);min-height:var(--toolbar-target,48px)}
+#support-dock .access-tool-row .navigation-icon,#support-dock .access-tool-row .navigation-icon svg{width:40px;height:40px;min-width:40px;min-height:40px}
+#support-dock>.app-shortcuts-bar{display:block;grid-column:auto;flex-basis:auto;width:100%;padding:0;margin:8px 0 0}
+.app-shell[data-button-display=icons] #support-dock .dock-tool-label{display:none}
+.app-shell .bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+.app-shell .bottom-nav a{min-width:0;min-height:var(--target,48px);text-align:center}
+.app-shell .bottom-nav a>[data-icon]{display:grid;place-items:center;width:32px;height:32px;flex:none}
+.app-shell .bottom-nav a>[data-icon] svg{display:block;width:32px;height:32px;margin:0;flex:none}
+.app-shell .bottom-nav a>span:last-child{line-height:1.65;white-space:normal;max-width:100%;min-width:0;overflow-wrap:anywhere;word-break:normal}
+.app-shell[data-button-display=icons] .bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+.app-shell[data-button-display=icons] .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:max(60px,var(--target,48px));padding:8px 4px}
+.app-shell[data-button-display=icons] .bottom-nav a>span:last-child{display:none}
+.dyslexic-font .app-shell[data-button-display=labels] .bottom-nav,.app-shell.spacing[data-button-display=labels] .bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+.app-shell[data-theme=contrast] button[aria-pressed=true],.app-shell[data-theme=contrast] button[aria-expanded=true],.app-shell[data-theme=dark] button[aria-pressed=true],.app-shell[data-theme=dark] button[aria-expanded=true],dialog[data-theme=contrast] button[aria-pressed=true],dialog[data-theme=dark] button[aria-pressed=true]{background:#fff!important;color:#000!important;border-color:#fff!important;box-shadow:inset 0 0 0 2px #000}
+.app-shell[data-theme=contrast] button[aria-pressed=true] svg,.app-shell[data-theme=contrast] button[aria-expanded=true] svg,.app-shell[data-theme=dark] button[aria-pressed=true] svg,.app-shell[data-theme=dark] button[aria-expanded=true] svg{color:#000;stroke:currentColor}
+/* Welcome actions and framed setup sections. */
+.setup-controls:has(#setup-shortcuts-only){display:flex;flex-direction:column;gap:10px;margin:20px 0 25px}
+.setup-controls:has(#setup-shortcuts-only)>.setup-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+.setup-controls:has(#setup-shortcuts-only)>.setup-actions{display:grid;grid-template-columns:1fr;gap:10px;margin:0}
+.setup-controls:has(#setup-shortcuts-only) button{min-height:64px;line-height:1.4}
+.setup-controls:has(#setup-shortcuts-only) #setup-dyslexic{grid-column:1/-1;width:100%;justify-content:flex-start;text-align:left}
+.setup-controls:has(#setup-shortcuts-only) .setup-start,#setup-shortcuts-only{justify-content:flex-start;text-align:left;gap:12px}
+.large-text .setup-controls:has(#setup-shortcuts-only)>.setup-quick{grid-template-columns:1fr}
+#setup-content .setup-spoken-frame,#setup-content .setup-message-frame,#setup-content .setup-gesture-frame,#setup-content .setup-choices-summary,.setup-button-options{border:1px solid var(--border);border-radius:16px;padding:16px;margin:24px 0;background:transparent;min-width:0}
+#setup-content .setup-spoken-frame>legend{font-size:1.05rem;font-weight:700;padding:0 7px;line-height:1.4}
+#setup-content .setup-message-frame textarea{width:100%;min-width:0;max-width:100%}
+#setup-content .setup-gesture-shake{border-top:1px solid var(--border);margin-top:18px;padding-top:16px}
+#setup-content .setup-choices-summary .setup-review{background:transparent;border:0;padding:0;margin:0 0 18px}
+#setup-content .setup-choices-summary>.check-row{border-top:1px solid var(--border);padding-top:16px}
+#setup-actions:has(#setup-done){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#setup-actions:has(#setup-done) button{min-width:0;padding:12px 6px;font-size:.82rem;line-height:1.4;overflow-wrap:normal}
+#setup-actions button{min-width:0}
+@media print{#support-dock{display:none!important}}
+#view-access .setup-summary a[href="#setup"]{display:flex;justify-content:center;align-items:center;text-align:center}

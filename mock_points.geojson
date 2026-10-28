@@ -1,0 +1,300 @@
+{
+  "type": "FeatureCollection",
+  "name": "Access Adelaide — mock points, unverified",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.59688,
+          -34.9215
+        ]
+      },
+      "properties": {
+        "id": "station",
+        "type": "entry",
+        "name": "Railway Station entrance",
+        "area": "North Terrace",
+        "description": "Example only: a level entrance with a wide approach and automatic doors.",
+        "facilities": "Mock details: level approach; wide entrance; tactile entrance cue.",
+        "unknown": "Door width, opening hours, lift reliability and actual entrance access have not been checked.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.59916,
+          -34.92148
+        ]
+      },
+      "properties": {
+        "id": "terrace-rest",
+        "type": "rest",
+        "name": "A pause on North Terrace",
+        "area": "North Terrace · near King William Road",
+        "description": "Example only: a shaded place to pause, with space beside the seat for a mobility aid.",
+        "facilities": "Mock details: backrest; armrests; shade; space beside seating.",
+        "unknown": "Seat height, path width, shade and current condition have not been checked.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60302,
+          -34.92048
+        ]
+      },
+      "properties": {
+        "id": "precinct-toilet",
+        "type": "toilet",
+        "name": "Cultural precinct toilet",
+        "area": "State Library precinct",
+        "description": "Example only: an accessible unisex toilet near the cultural precinct.",
+        "facilities": "Mock details: step-free entry; grab rails; left-side transfer space.",
+        "unknown": "Opening hours, transfer direction, dimensions and availability have not been checked. No Changing Places facility is confirmed.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60379,
+          -34.92008
+        ]
+      },
+      "properties": {
+        "id": "courtyard",
+        "type": "quiet",
+        "name": "A quieter courtyard",
+        "area": "Cultural precinct",
+        "description": "Example only: a small courtyard away from the street, with seating and a slower pace.",
+        "facilities": "Mock details: seating; lower traffic noise; space to pause.",
+        "unknown": "Noise, crowding, access and opening hours have not been checked. A quiet environment is not guaranteed.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60172,
+          -34.92178
+        ]
+      },
+      "properties": {
+        "id": "crossing",
+        "type": "crossing",
+        "name": "North Terrace crossing",
+        "area": "Near Kintore Avenue",
+        "description": "Example only: a signalised crossing with kerb ramps, tactile paving and an audible signal.",
+        "facilities": "Mock details: kerb ramps; tactile paving; audible crossing signal.",
+        "unknown": "Ramp slope, signal timing, traffic conditions and tactile cues have not been checked. Follow real crossing signals.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60055,
+          -34.92275
+        ]
+      },
+      "properties": {
+        "id": "water",
+        "type": "water",
+        "name": "City drinking fountain",
+        "area": "Near Rundle Mall",
+        "description": "Example only: a drinking fountain with clear approach space and a lower bottle-filling point.",
+        "facilities": "Mock details: lower outlet; clear approach; bottle refill.",
+        "unknown": "Reach height, working condition and access have not been checked.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60193,
+          -34.92314
+        ]
+      },
+      "properties": {
+        "id": "mall-toilet",
+        "type": "toilet",
+        "name": "Mall precinct toilet",
+        "area": "Rundle Mall precinct",
+        "description": "Example only: a public toilet with a step-free approach.",
+        "facilities": "Mock details: wide doorway; grab rails; accessible washbasin.",
+        "unknown": "Opening hours, door operation, dimensions and availability have not been checked.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.60504,
+          -34.92147
+        ]
+      },
+      "properties": {
+        "id": "gallery-rest",
+        "type": "rest",
+        "name": "A seat near the gallery",
+        "area": "North Terrace · Art Gallery precinct",
+        "description": "Example only: a seat on a wide path near the gallery precinct.",
+        "facilities": "Mock details: backrest; companion space; shade.",
+        "unknown": "Surface, shade, seating and nearby access have not been checked.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.6003,
+          -34.9254
+        ]
+      },
+      "properties": {
+        "id": "bus-example",
+        "type": "transport",
+        "name": "Example bus stop",
+        "area": "City centre",
+        "description": "An invented bus stop for trying the interface.",
+        "facilities": "Mock details: seating; boarding area; timetable display.",
+        "unknown": "Services, boarding access, tactile cues and stop location are not verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.5984,
+          -34.922
+        ]
+      },
+      "properties": {
+        "id": "tram-example",
+        "type": "transport",
+        "name": "Example tram stop",
+        "area": "City centre",
+        "description": "An invented tram stop for trying the interface.",
+        "facilities": "Mock details: level approach; seating; platform space.",
+        "unknown": "Stop access, platform gap, service availability and current conditions are not verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.6012,
+          -34.9232
+        ]
+      },
+      "properties": {
+        "id": "shop-example",
+        "type": "shop",
+        "name": "Example shop",
+        "area": "City centre",
+        "description": "An invented shop for trying the interface.",
+        "facilities": "Mock details: level entrance; wide door; space to turn.",
+        "unknown": "This is not a real business listing. Entrance dimensions, hours and facilities are not verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.6024,
+          -34.923
+        ]
+      },
+      "properties": {
+        "id": "cafe-example",
+        "type": "food",
+        "name": "Example café",
+        "area": "City centre",
+        "description": "An invented café for trying the interface.",
+        "facilities": "Mock details: step-free entrance; different seating choices.",
+        "unknown": "This is not a real business listing. Menu, seating, noise and access are not verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.6042,
+          -34.9242
+        ]
+      },
+      "properties": {
+        "id": "restaurant-example",
+        "type": "food",
+        "name": "Example restaurant",
+        "area": "City centre",
+        "description": "An invented restaurant for trying the interface.",
+        "facilities": "Mock details: space beside tables; a quieter seating option.",
+        "unknown": "This is not a real business listing. Bookings, toilets, layout and access are not verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.603,
+          -34.921
+        ]
+      },
+      "properties": {
+        "id": "activity-example",
+        "type": "activity",
+        "name": "Example visitor activity",
+        "area": "Cultural precinct",
+        "description": "An invented visitor activity for trying the interface.",
+        "facilities": "Mock details: step-free entry; seating; written information.",
+        "unknown": "No real event, opening hours, tickets, sensory conditions or accessibility arrangements are verified.",
+        "source": "Invented demonstration data",
+        "verified": false
+      }
+    }
+  ]
+}
