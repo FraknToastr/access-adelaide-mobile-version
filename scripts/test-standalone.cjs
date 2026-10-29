@@ -43,6 +43,7 @@ with zipfile.ZipFile(archive) as z:
   await page.goto(url);await page.waitForSelector('#setup-skip');
   assert.match(await page.locator('#factory-reset').innerText(),/Reset Demo/i);
   assert.equal(await page.locator('script[src],link[rel="stylesheet"]').count(),0);
+  assert.equal(await page.locator('#cache-bootstrap').count(),0,'Standalone does not poll the web release');
   const metadata=await page.evaluate(()=>({build:JSON.parse(document.querySelector('#standalone-build').textContent),notices:JSON.parse(document.querySelector('#third-party-notices').textContent),graph:AccessRoutingData.metadata}));
   assert.equal(metadata.graph.edgeCount,7280);assert.equal(metadata.graph.nodeCount,5168);
   const digest=crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'app.js'))).digest('hex');
@@ -78,7 +79,7 @@ with zipfile.ZipFile(archive) as z:
  }finally{await browser.close();}
  // Run every scenario against the isolated extracted file without a localhost server.
  const env={...process.env,APP_HTML:file,FILE_ONLY:'1'};
- run('test-routing-browser.cjs',env);run('test-dyslexic-scale-browser.cjs',env);run('test-shared-ui-browser.cjs',env);
- console.log('PASS standalone: one-file ZIP, source parity, embedded assets/licenses, isolated offline file://, current setup/Travel Mode/reset changes, routing, Dyslexic and shared-UI regression suites.');
+ run('test-routing-browser.cjs',env);run('test-dyslexic-scale-browser.cjs',env);run('test-shared-ui-browser.cjs',env);run('test-cache-versions.cjs',env);run('test-setup-needs-browser.cjs',env);
+ console.log('PASS standalone: one-file ZIP, source parity, embedded assets/licenses, isolated offline file://, routing, Dyslexic, shared-UI, cache-version and setup-needs regression suites.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>fs.rmSync(temp,{recursive:true,force:true}));

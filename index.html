@@ -6,25 +6,41 @@
 <meta name="theme-color" content="#153f38">
 <meta name="description" content="A mobile accessibility-first Adelaide journey planner prototype. All access information and journeys are illustrative.">
 <title>Explore · Access Adelaide</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="ui-controls.css">
-<link rel="stylesheet" href="setup-shortcuts.css">
-<link rel="stylesheet" href="map-controls.css">
-<link rel="stylesheet" href="toolbar.css">
-<link rel="stylesheet" href="press-hints.css">
-<script src="vendor/maplibre-gl.js" defer></script>
-<script src="data.js" defer></script>
-<script src="ui-controls.js" defer></script>
-<script src="map-engine.js" defer></script>
-<script src="routing-data.js" defer></script>
-<script src="routing-engine.js" defer></script>
-<script src="app.js" defer></script>
-<script src="support-ui.js" defer></script>
-<script src="press-hints.js" defer></script>
-<script src="platform-guide.js" defer></script>
-<link rel="stylesheet" href="routing.css">
+<script id="cache-bootstrap" data-version="bf2549313a8297b8">
+(() => {
+ const version=document.currentScript.dataset.version;
+ window.AccessAdelaideBuildVersion=version;
+ if(!/^https?:$/.test(location.protocol))return;
+ const check=new URL('version.json',location.href);
+ check.searchParams.set('_',Date.now().toString(36));
+ fetch(check,{cache:'no-store',credentials:'same-origin'}).then(response=>response.ok?response.json():null).then(release=>{
+  if(!release||!/^[a-f0-9]{16}$/.test(release.version)||release.version===version)return;
+  const next=new URL(location.href);
+  if(next.searchParams.get('app-version')===release.version)return;
+  next.searchParams.set('app-version',release.version);
+  location.replace(next.href);
+ }).catch(()=>{});
+})();
+</script>
+<link rel="icon" href="icon.svg?v=bf2549313a8297b8" type="image/svg+xml">
+<link rel="stylesheet" href="vendor/maplibre-gl.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="styles.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="ui-controls.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="setup-shortcuts.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="map-controls.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="toolbar.css?v=bf2549313a8297b8">
+<link rel="stylesheet" href="press-hints.css?v=bf2549313a8297b8">
+<script src="vendor/maplibre-gl.js?v=bf2549313a8297b8" defer></script>
+<script src="data.js?v=bf2549313a8297b8" defer></script>
+<script src="ui-controls.js?v=bf2549313a8297b8" defer></script>
+<script src="map-engine.js?v=bf2549313a8297b8" defer></script>
+<script src="routing-data.js?v=bf2549313a8297b8" defer></script>
+<script src="routing-engine.js?v=bf2549313a8297b8" defer></script>
+<script src="app.js?v=bf2549313a8297b8" defer></script>
+<script src="support-ui.js?v=bf2549313a8297b8" defer></script>
+<script src="press-hints.js?v=bf2549313a8297b8" defer></script>
+<script src="platform-guide.js?v=bf2549313a8297b8" defer></script>
+<link rel="stylesheet" href="routing.css?v=bf2549313a8297b8">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>

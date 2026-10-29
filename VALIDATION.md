@@ -164,6 +164,18 @@ Selected WCAG relative-luminance calculations, rounded:
 - The complete standalone suite passed: isolated one-member ZIP, source parity, embedded assets/licences, offline routing/setup/reset, and all routing, Dyslexic and shared-UI child suites. The rebuilt HTML is 2,724,680 bytes; the ZIP is 889,267 bytes.
 - This run used headless Firefox. Direct Edge/Chromium and physical-device validation remain outside this result. No GitHub commit or push was performed.
 
+## Cache versioning — 2026-10-29
+
+- The source entry, local scripts, styles, icon and dynamically loaded shortcut artwork share a deterministic release fingerprint. The build verifies or updates `index.html` and `version.json` before generating the standalone.
+- Browser tests in headless Firefox and Chromium simulated a cached entry receiving a newer release, an up-to-date entry, an unavailable or invalid release response, and an out-of-sync entry after a redirect. They checked a single update navigation, preserved URL parameters/hash and browser data, no redirect loop, and normal local-file operation without a release request.
+- The source routing, Dyslexic and shared-UI file-mode browser suites passed. The standalone suite verified source parity, embedded assets, isolation and the browser regressions. These are simulated/cache-fixture tests; GitHub Pages deployment and physical Edge or Firefox devices were not tested by this local change.
+
+## Independent setup suggestions — 2026-10-29
+
+- Confirmed the published setup code had added both Text & contrast and Read page for the seeing preference, and had enabled spoken screens for it.
+- The source and rebuilt standalone pass direct-file Firefox checks for seeing alone, reading alone, both together, deselecting reading, and explicitly enabling spoken screens. The visual text-size, contrast and larger-target suggestions remain active. Existing remembered choices are not rewritten.
+- The full standalone browser suite passed, including routing, Dyslexic, shared-UI, cache-version and setup-needs scenarios. The generated web release fingerprint is `bf2549313a8297b8`; no GitHub update was performed.
+
 ## Still required
 
 - Physical iPhone/Android tests, VoiceOver, TalkBack, Voice Control/Voice Access and switch hardware.

@@ -16,34 +16,42 @@ function read(name){
 }
 const mime={'.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'};
 function dataURL(name){const type=mime[path.extname(name)];if(!type)throw Error('Unknown embedded asset type: '+name);return `data:${type};base64,${read(name).toString('base64')}`;}
+const localName=ref=>ref.split(/[?#]/,1)[0];
 execFileSync('rtk',['proxy',process.execPath,path.join(root,'scripts/build-routing-data.cjs'),'--check'],{stdio:'inherit'});
+execFileSync('rtk',['proxy',process.execPath,path.join(root,'scripts/update-cache-versions.cjs'),...(check?['--check']:[])],{stdio:'inherit'});
 let html=read('index.html').toString('utf8');
+// The standalone contains every dependency and must not poll the web release.
+const bootstrap=/<script\s+id="cache-bootstrap"[^>]*>[\s\S]*?<\/script>\s*/i;
+if(!bootstrap.test(html))throw Error('Cache bootstrap is missing from the source entry.');
+html=html.replace(bootstrap,'');
 const scripts=[];
 const shortcutImages=Object.fromEntries(fs.readdirSync(path.join(root,'vendor/shortcuts')).filter(name=>name.endsWith('.svg')).sort().map(name=>[name,dataURL('vendor/shortcuts/'+name)]));
 html=html.replace(/<link\b[^>]*>/gi,tag=>{
  const href=tag.match(/\bhref="([^"]+)"/i)?.[1],rel=tag.match(/\brel="([^"]+)"/i)?.[1];
  if(rel==='stylesheet'){
   if(!href||/^(?:[a-z]+:|\/\/)/i.test(href))throw Error('Expected a local stylesheet: '+tag);
-  let css=read(href).toString('utf8').replace(/\/\*[#@]\s*sourceMappingURL=[\s\S]*?\*\//g,'');
+  const name=localName(href);
+  let css=read(name).toString('utf8').replace(/\/\*[#@]\s*sourceMappingURL=[\s\S]*?\*\//g,'');
   css=css.replace(/url\(\s*(?:(["'])(.*?)\1|([^)]*))\s*\)/gi,(match,quote,quoted,bare)=>{
    const ref=(quoted??bare).trim();if(ref.startsWith('data:')||ref.startsWith('#'))return match;
    if(/^(?:[a-z]+:|\/\/)/i.test(ref))throw Error('Remote CSS asset: '+ref);
-   return 'url("'+dataURL(path.posix.join(path.posix.dirname(href),ref))+'")';
+   return 'url("'+dataURL(path.posix.join(path.posix.dirname(name),localName(ref)))+'")';
   });
-  return `<style data-source="${href}">\n${css.replace(/<\/style/gi,'<\\/style')}\n</style>`;
+  return `<style data-source="${name}">\n${css.replace(/<\/style/gi,'<\\/style')}\n</style>`;
  }
- if(rel==='icon')return tag.replace(href,dataURL(href));
+ if(rel==='icon')return tag.replace(href,dataURL(localName(href)));
  return tag;
 });
 html=html.replace(/<script\b([^>]*)\bsrc="([^"]+)"([^>]*)>\s*<\/script>/gi,(tag,before,src)=>{
  if(/^(?:[a-z]+:|\/\/)/i.test(src))throw Error('Remote script dependency: '+src);
- let js=read(src).toString('utf8').replace(/^\/\/[#@]\s*sourceMappingURL=.*$/gm,'');
- if(src==='support-ui.js'){
-  const imagePath=`src="vendor/shortcuts/'+image+'"`,embedded=`src="'+standaloneShortcutImages[image]+'"`;
+ const name=localName(src);
+ let js=read(name).toString('utf8').replace(/^\/\/[#@]\s*sourceMappingURL=.*$/gm,'');
+ if(name==='support-ui.js'){
+  const imagePath=`src="vendor/shortcuts/'+image+(window.AccessAdelaideBuildVersion?'?v='+window.AccessAdelaideBuildVersion:'')+'"`,embedded=`src="'+standaloneShortcutImages[image]+'"`;
   if(!js.includes(imagePath)||!js.includes('(() => {'))throw Error('Shortcut image binding changed; update the standalone bundler.');
   js=js.replace('(() => {','(() => {\nconst standaloneShortcutImages='+JSON.stringify(shortcutImages)+';').replace(imagePath,embedded);
  }
- scripts.push(`<script data-source="${src}">\n${js.replace(/<\/script/gi,'<\\/script')}\n</script>`);
+ scripts.push(`<script data-source="${name}">\n${js.replace(/<\/script/gi,'<\\/script')}\n</script>`);
  return '';
 });
 if(!scripts.length||/<script\b[^>]*\bsrc=/i.test(html))throw Error('Unbundled script dependency.');

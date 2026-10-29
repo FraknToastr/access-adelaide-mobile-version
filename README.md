@@ -21,7 +21,13 @@ The generated HTML embeds the current scripts, styles, walking graph, regular/bo
 
 Keep editing the separate source files. Run `rtk proxy node scripts/build-standalone.cjs` to regenerate both downloads, or append `--check` to verify that they match the source. The build uses Node and Python 3 standard libraries. Source hashes and licence notices are embedded as non-executable JSON; ZIP contents and timestamps are deterministic.
 
+The build also fingerprints the web entry and its local scripts, styles, icon and shortcut artwork, then updates their URLs in `index.html` and writes `version.json`. Build before committing or publishing changes, and include both files with the changed assets. `--check` fails if the cache versions or standalone distribution are stale. The web app checks for a newer release on startup and reloads the current page when necessary, preserving its URL and saved data; if offline, it continues with the available files. A cached page from before this update has no update check and may need one refresh to receive it. The standalone file never polls the web release.
+
 With the existing Playwright/Firefox environment configured, `rtk proxy node scripts/test-standalone.cjs` verifies the ZIP and opens its HTML in an isolated folder with external requests blocked. It also runs the routing and Dyslexic browser suites against that extracted file. `APP_HTML` can point those individual suites at another HTML entry; their HTTP fixture serves only that entry in this mode.
+
+Run `rtk proxy node scripts/test-cache-versions.cjs` with the same Playwright environment to check cache fingerprints, updates, offline handling and user-data preservation.
+
+Run `rtk proxy node scripts/test-setup-needs-browser.cjs` to verify that vision and reading-aloud selections suggest their respective tools independently. It also runs as part of the standalone suite.
 
 ## Set up the support you want
 
@@ -32,6 +38,8 @@ With the existing Playwright/Firefox environment configured, `rtk proxy node scr
 5. Review the setup and optionally remember it on this device. Remembering saves chosen preferences, shortcut configuration and communication-card text in browser storage.
 
 **Set up my app and shortcuts** opens the full flow. **Done** on intermediate pages saves valid choices made so far. Editing setup returns to the last Explore or Journey page; first-time setup, factory reset and **Use my phone's settings** return to initial Explore. **Set up my shortcuts only** opens Optional Tool Shortcuts and Optional App Shortcuts with a shared remember option, Back and Save. It preserves other preferences and applies only valid shortcut changes.
+
+**Make things easier to see** suggests Text & contrast and visual adjustments. **Read information aloud** separately suggests Read page and spoken screens; either or both can be chosen.
 
 Text/contrast controls, Hear this page and a communication card are available from the opening screen. The app changes its own interface; it does not change the phone’s global accessibility settings.
 
