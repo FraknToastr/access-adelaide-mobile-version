@@ -39,7 +39,7 @@ async function main(){
   await context.route('**/*',route=>route.request().url().startsWith(base)||route.request().url().startsWith('file:')?route.continue():route.abort());
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
   const START=[138.59688,-34.9215],END=[138.60302,-34.92048];
-  const summary=target=>page.locator(target==='start'?'#origin-summary':'#destination-summary');
+  const selectedPoint=target=>({textContent:()=>page.evaluate(target=>{const coords=window.testMap?.routeEndpoints?.[target==='start'?0:1];return coords?coords.map(n=>n.toFixed(5)).join(', '):'No point selected.';},target)});
   const choice=target=>page.locator(target==='start'?'#choose-start-map':'#choose-end-map');
   const centre=()=>page.evaluate(()=>testMap.getCenterCoordinates());
   const assertCentre=(actual,expected)=>{assert.ok(Math.abs(actual[0]-expected[0])<1e-8);assert.ok(Math.abs(actual[1]-expected[1])<1e-8);};
@@ -74,38 +74,38 @@ async function main(){
   async function replyGPS(coords){await page.evaluate(c=>gpsReply.success({coords:{longitude:c[0],latitude:c[1],accuracy:5}}),coords);}
   await page.goto(base+'/#journey');await page.waitForSelector('#calculate-route');
   assert.equal(await page.locator('input[name="route-style"]:checked').inputValue(),'shortest');
-  assert.equal(await page.locator('#selected-locations').getAttribute('open'),null);
+  assert.equal(await page.locator('#selected-locations,#map-selection-title').count(),0);
   assert.equal(await page.locator('#origin-text,#destination-text,#sample-start-choices,#sample-end-choices').count(),0);
   assert.equal(await page.locator('#locate-me').isVisible(),false);
   assert.equal((await page.content()).includes('Test network only. Accessibility and opening hours are unverified. Endpoints must be within 50 metres of an eligible path; offsets are not part of the route.'),false);
   await page.locator('#calculate-route').click();assert.equal(await page.locator('#journey-result').isVisible(),false);assert.match(await page.locator('#routing-status').innerText(),/choose/i);
 
   // GPS supplies a draft start and never commits it without confirmation.
-  await openChoice('start');const unsetStart=await summary('start').textContent();
+  await openChoice('start');const unsetStart=await selectedPoint('start').textContent();
   await page.waitForFunction(()=>document.activeElement.id==='map');
   await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.id),'locate-me');
   await installPendingGPS();await replyGPS(START);assertCentre(await centre(),START);
-  assert.equal(await summary('start').textContent(),unsetStart);
-  await page.locator('#confirm-map-location').click();assert.match(await summary('start').textContent(),/34\.92150/);
-  assert.equal(await page.locator('#selected-locations').getAttribute('open'),null);
+  assert.equal(await selectedPoint('start').textContent(),unsetStart);
+  await page.locator('#confirm-map-location').click();assert.match(await selectedPoint('start').textContent(),/34\.92150/);
+  assert.equal(await page.locator('#selected-locations,#map-selection-title').count(),0);
   await choosePoint('end',END,{tap:true});
-  assert.match(await summary('end').textContent(),/34\.92048/);
+  assert.match(await selectedPoint('end').textContent(),/34\.92048/);
   assert.equal(await page.locator('.route-endpoint').count(),2);
-  const committedStart=await summary('start').textContent(),committedEnd=await summary('end').textContent();
+  const committedStart=await selectedPoint('start').textContent(),committedEnd=await selectedPoint('end').textContent();
   await openChoice('start');await page.evaluate(()=>testMap.jumpTo({center:[138.6,-34.922]}));
-  await openChoice('end');assert.equal(await summary('start').textContent(),committedStart);
-  await page.keyboard.press('Escape');assert.equal(await summary('end').textContent(),committedEnd);assert.equal(await page.locator('#locate-me').isVisible(),false);
+  await openChoice('end');assert.equal(await selectedPoint('start').textContent(),committedStart);
+  await page.keyboard.press('Escape');assert.equal(await selectedPoint('end').textContent(),committedEnd);assert.equal(await page.locator('#locate-me').isVisible(),false);
 
   // Permission failure and stale callbacks on target changes, manual pan, cancel,
   // and navigation must never overwrite a confirmed point or move the wrong map.
   await openChoice('start');await page.evaluate(()=>navigator.geolocation.getCurrentPosition=(success,failure)=>failure({code:1}));
   await page.locator('#locate-me').click();assert.match(await page.locator('#location-status').innerText(),/not granted|denied/i);assert.equal(await page.locator('#locate-me').isEnabled(),true);
-  await installPendingGPS();await openChoice('end');let keptCentre=await centre();await replyGPS([139,-35]);assertCentre(await centre(),keptCentre);assert.equal(await summary('start').textContent(),committedStart);
+  await installPendingGPS();await openChoice('end');let keptCentre=await centre();await replyGPS([139,-35]);assertCentre(await centre(),keptCentre);assert.equal(await selectedPoint('start').textContent(),committedStart);
   await openChoice('start');await installPendingGPS();
   if(!await page.locator('#map-directions').isVisible())await page.locator('#toggle-map-directions').click();
   await page.locator('[data-pan="north"]').click();keptCentre=await centre();await replyGPS([139,-35]);assertCentre(await centre(),keptCentre);assert.equal(await page.locator('#locate-me').isEnabled(),true);
-  await installPendingGPS();await page.locator('#cancel-map-location').click();keptCentre=await centre();await replyGPS([139,-35]);assertCentre(await centre(),keptCentre);assert.equal(await summary('start').textContent(),committedStart);
-  await openChoice('start');await installPendingGPS();await page.locator('#bottom-nav a[href="#access"]').click();await page.waitForSelector('#view-access:not([hidden])');await replyGPS([139,-35]);assert.equal(await summary('start').textContent(),committedStart);
+  await installPendingGPS();await page.locator('#cancel-map-location').click();keptCentre=await centre();await replyGPS([139,-35]);assertCentre(await centre(),keptCentre);assert.equal(await selectedPoint('start').textContent(),committedStart);
+  await openChoice('start');await installPendingGPS();await page.locator('#bottom-nav a[href="#access"]').click();await page.waitForSelector('#view-access:not([hidden])');await replyGPS([139,-35]);assert.equal(await selectedPoint('start').textContent(),committedStart);
   await page.locator('#bottom-nav a[href="#journey"]').click();await page.waitForSelector('#view-journey:not([hidden])');
   assert.equal(await page.locator('#locate-me').isVisible(),false);
 
@@ -160,7 +160,7 @@ async function main(){
   await page.locator('#bottom-nav a[href="#journey"]').click();assert.equal(await page.locator('#calculate-route').isEnabled(),true);
   await page.evaluate(()=>{document.querySelector('#journey-form').requestSubmit();document.querySelector('#choose-start-map').click();});await page.waitForSelector('#map-selection:visible');await page.waitForTimeout(400);assert.equal(await page.locator('#journey-result').isVisible(),false);await page.locator('#cancel-map-location').click();
   await page.evaluate(()=>{AccessBasemaps.configure({key:'test-key-kept-by-secret-reset',rememberKey:true,preferred:'esri'});document.querySelector('#journey-form').requestSubmit();document.querySelector('#factory-reset').click();});await page.waitForTimeout(400);
-  assert.equal(await page.locator('#calculate-route').isEnabled(),true);assert.equal(await page.locator('#calculate-route').getAttribute('aria-busy'),null);assert.equal(await page.evaluate(()=>AccessBasemaps.getConfig().key),'test-key-kept-by-secret-reset');assert.equal(await page.locator('#journey-result').isVisible(),false);assert.equal(await page.locator('#selected-locations').getAttribute('open'),null);
+  assert.equal(await page.locator('#calculate-route').isEnabled(),true);assert.equal(await page.locator('#calculate-route').getAttribute('aria-busy'),null);assert.equal(await page.evaluate(()=>AccessBasemaps.getConfig().key),'test-key-kept-by-secret-reset');assert.equal(await page.locator('#journey-result').isVisible(),false);assert.equal(await page.locator('#selected-locations,#map-selection-title').count(),0);
   await page.waitForSelector('#view-setup:not([hidden])');
   for(let step=0;step<6;step++)await page.locator('#setup-next').click();await page.waitForSelector('#view-explore:not([hidden])');
   await page.locator('[data-category]').first().click();assert.ok(await page.locator('#places li').count()>0);
@@ -169,7 +169,7 @@ async function main(){
   await page.locator('#bottom-nav a[href="#help"]').click();assert.ok(await page.locator('#map-credits-text').count());assert.equal(await page.locator('#platform-guide').getAttribute('open'),null);
   await page.locator('#communication').locator('..').locator('summary').click();await page.locator('#communication').fill('Please give me more time.');await page.locator('#show-card').click();assert.equal(await page.locator('dialog[open]').count(),1);await page.locator('dialog[open] [data-close]').first().click();
   assert.deepEqual(errors,[]);await context.close();
-  console.log('PASS browser: inline Journey map, collapsed summaries, confirmed map/GPS endpoints, stale GPS/calculation races, one shared map, saved/legacy routes, download, Explore state/controls, offline file://, 100/125/150% text at 320/390/412 px and existing setup/navigation/Help.');
+  console.log('PASS browser: inline Journey map, confirmed endpoint state, confirmed map/GPS endpoints, stale GPS/calculation races, one shared map, saved/legacy routes, download, Explore state/controls, offline file://, 100/125/150% text at 320/390/412 px and existing setup/navigation/Help.');
  }finally{await browser.close();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>server.close());

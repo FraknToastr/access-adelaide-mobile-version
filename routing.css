@@ -20,11 +20,6 @@ body.big-map.choosing-route-location .map-wrap{height:40dvh;min-height:180px}
 /* One map panel moves between its Explore anchor and this inline Journey slot. */
 .journey-point-choices{margin-bottom:14px}
 .journey-point-choices>button{flex:1 1 10rem;text-align:left;justify-content:flex-start}
-#selected-locations{margin:0 0 16px}
-#selected-locations summary{min-height:var(--target);cursor:pointer}
-.journey-location-summaries{display:grid;gap:8px;margin:12px 0 0;min-width:0}
-.journey-location-summaries dt{font-weight:700}
-.journey-location-summaries dd{margin:0 0 8px;overflow-wrap:anywhere}
 #journey-map-slot{min-width:0;margin:0 0 20px}
 #journey-map-description{margin:0 0 10px}
 #map-panel[data-owner=journey] .map-badge,

@@ -114,7 +114,7 @@ function applySettings(persist=true){
  if(settings.mapless&&settings.mapless!==maplessApplied)setExploreMode(false,false);
  maplessApplied=settings.mapless;
  document.dispatchEvent(new CustomEvent('accessadelaide:settings',{detail:{...settings}}));
- renderJourneySummaries();
+
  if(map){map.resize();if(mapReady)map.setPaintProperty('schematic-background','background-color',theme==='light'?'#eeeee2':theme==='dark'?'#dce3da':'#eee');}
 }
 applySettings(false);
@@ -133,7 +133,7 @@ function navigate(){
  document.title=`${{setup:'My access setup',explore:'Explore',journey:'Journey',access:'Access settings',help:'Help'}[view]} · Access Adelaide`;
  if(changed && requested){window.scrollTo({top:0,behavior:'instant'});$(`#${view}-title`).focus({preventScroll:true});}
  if(view==='explore'){attachMap('explore');initMap();if(map)requestAnimationFrame(()=>map.resize());}
- if(view==='journey'){if(journeyMapVisible){attachMap('journey');initMap();}renderSaved();requestAnimationFrame(renderJourneySummaries);}
+ if(view==='journey'){if(journeyMapVisible){attachMap('journey');initMap();}renderSaved();}
  if(openGuide){const guide=$('#platform-guide');guide.open=true;requestAnimationFrame(()=>{guide.querySelector('summary').focus({preventScroll:true});window.scrollTo({top:window.scrollY+guide.getBoundingClientRect().top-12,behavior:'instant'});});}
  document.dispatchEvent(new CustomEvent('accessadelaide:view',{detail:{view}}));
 }
@@ -347,12 +347,6 @@ if(typeof ResizeObserver==='function'){
  new ResizeObserver(()=>{if(map)requestAnimationFrame(renderMarkers);}).observe($('.map-topbar'));
 }
 
-function renderJourneySummaries(){
- for(const target of ['start','end']){
-  const point=journeyPoints[target],summary=$(target==='start'?'#origin-summary':'#destination-summary');
-  summary.textContent=point?`${point.label} · ${point.kind==='gps'?'GPS location':point.kind==='sample'?'Place point':'Map selection'}`:`No ${target==='start'?'start':'destination'} selected.`;
- }
-}
 function syncJourneyMarkers(){
  if(!map)return;
  if(route)map.setRouteEndpoints(route.snaps.start.coords,route.snaps.end.coords);
@@ -401,7 +395,7 @@ $('#locate-me').onclick=()=>{
 function resolveJourneyPoint(target){return journeyPoints[target];}
 function setJourneyPoint(target,point){
  invalidateJourney();journeyPoints[target]={...point,coords:[...point.coords]};
- renderJourneySummaries();syncJourneyMarkers();
+ syncJourneyMarkers();
 }
 function ensureRouter(){
  if(!routingPromise){
@@ -420,7 +414,7 @@ function setSelectionControls(){
  $('#map-locate').hidden=active?.target!=='start';
  $('#fit-route').hidden=!!active||!route;
  document.body.classList.toggle('choosing-route-location',!!active);
- if(active){$('#map-selection-title').textContent=active.target==='start'?'Choose your starting point':'Choose your destination';$('#confirm-map-location').textContent=active.target==='start'?'Use this start':'Use this destination';}
+ if(active){$('#confirm-map-location').textContent=active.target==='start'?'Use this start':'Use this destination';}
 }
 async function showJourneyMap(){
  if(currentView!=='journey')return null;
@@ -529,7 +523,7 @@ function renderSaved(){const saved=readSaved();$('#saved-plan').hidden=!saved;if
 $('#save-route').onclick=()=>{if(!route)return;try{localStorage.setItem(SAVED,JSON.stringify({version:2,networkVersion:route.networkVersion,points:route.points,profile:route.style,pace:route.pace,needs:route.needs}));renderSaved();announce('Journey endpoints and preferences saved on this device. The route will be recalculated when opened.');}catch{announce('Your browser could not save this journey. You can download its text instead.');}};
 $('#load-saved').onclick=()=>{
  cancelLocate();if(mapSelection)endMapSelection(false,false);const spec=readSaved();if(!spec){announce('This saved journey could not be opened. Choose new endpoints.');return;}
- if(spec.legacy){invalidateJourney();journeyPoints={start:null,end:null};renderJourneySummaries();syncJourneyMarkers();$('#routing-status').textContent=`This is an old illustrative journey (${spec.origin||'unknown start'} → ${spec.destinationLabel||'unknown destination'}). Choose and confirm both endpoints on the map, then calculate a walking route.`;$('#choose-start-map').focus();return;}
+ if(spec.legacy){invalidateJourney();journeyPoints={start:null,end:null};syncJourneyMarkers();$('#routing-status').textContent=`This is an old illustrative journey (${spec.origin||'unknown start'} → ${spec.destinationLabel||'unknown destination'}). Choose and confirm both endpoints on the map, then calculate a walking route.`;$('#choose-start-map').focus();return;}
  setJourneyPoint('start',spec.points.start);setJourneyPoint('end',spec.points.end);$(`input[name="route-style"][value="${spec.profile}"]`).checked=true;ui.setChoice('pace',spec.pace);$$('input[name="needs"]').forEach(c=>c.checked=spec.needs.includes(c.value));calculateJourney();
 };
 $('#delete-saved').onclick=()=>{try{localStorage.removeItem(SAVED);}catch{}$('#journey-title').focus();renderSaved();announce('Saved journey removed from this device.');};
@@ -550,13 +544,13 @@ $$('[data-setting]').forEach(e=>e.addEventListener('change',()=>{
 }));
 $$('[data-preset]').forEach(b=>b.onclick=()=>{const {remember,dyslexicFont,buttonDisplay,longPressTips}=settings;const presets={clear:{textSize:'150',theme:'contrast',targets:true},calm:{simple:true,spacing:true,mapless:true,motion:true},touch:{targets:true,textSize:'125'}};settings={...defaults,remember,dyslexicFont,buttonDisplay,longPressTips,...presets[b.dataset.preset]};applySettings();announce(`${b.querySelector('strong').textContent} setup applied. Adjust individual settings below or use Reset access settings.`);});
 $('#reset-settings').onclick=()=>{settings={...defaults};applySettings();setExploreMode(true);announce('Access settings reset. Saved journey is unchanged.');};
-$('#clear-data').onclick=()=>{try{localStorage.removeItem(SETTINGS);localStorage.removeItem(SAVED);}catch{}invalidateJourney();endMapSelection(false,false);journeyPoints={start:null,end:null};journeyMapVisible=false;$('#journey-map-slot').hidden=true;$('#selected-locations').open=false;renderJourneySummaries();attachMap('explore');syncJourneyMarkers();settings={...defaults};applySettings(false);setExploreMode(true);renderSaved();announce('Saved settings and journey cleared. Access settings reset.');};
+$('#clear-data').onclick=()=>{try{localStorage.removeItem(SETTINGS);localStorage.removeItem(SAVED);}catch{}invalidateJourney();endMapSelection(false,false);journeyPoints={start:null,end:null};journeyMapVisible=false;$('#journey-map-slot').hidden=true;attachMap('explore');syncJourneyMarkers();settings={...defaults};applySettings(false);setExploreMode(true);renderSaved();announce('Saved settings and journey cleared. Access settings reset.');};
 $('#show-card').onclick=()=>{const text=$('#communication').value.trim();if(!text){$('#communication').setAttribute('aria-invalid','true');$('#communication-error').hidden=false;$('#communication').focus();announce('Write what would help in the communication card field first.');return;}$('#communication').removeAttribute('aria-invalid');$('#communication-error').hidden=true;$('#communication-text').textContent=text;openDialog($('#communication-dialog'),$('#show-card'));};
 $('#quiet-screen').onclick=()=>{stopSpeech();openDialog($('#quiet-dialog'),$('#quiet-screen'));};
 $('#feedback-form').onsubmit=e=>{e.preventDefault();const text=$('#feedback').value.trim();if(!text){$('#feedback').setCustomValidity('Please write a feedback note first.');$('#feedback').reportValidity();return;}$('#feedback').setCustomValidity('');downloadText('Access_Adelaide_Feedback.txt',`Access Adelaide prototype feedback\n\n${text}\n`);$('#feedback-status').textContent='Feedback note download requested. Nothing was sent.';};
 $('#feedback').oninput=()=>$('#feedback').setCustomValidity('');
 window.addEventListener('pagehide',stopSpeech);
-window.addEventListener('resize',()=>{renderJourneySummaries();syncMapControlLayout();if(map)map.resize();});
+window.addEventListener('resize',()=>{syncMapControlLayout();if(map)map.resize();});
 const mapConfig=window.AccessBasemaps?.getConfig();
 function syncMapSettings(){const c=window.AccessBasemaps?.getConfig();if(!c)return;ui.setChoice('basemap-choice',c.preferred);$('#metromap-key').value=c.key;$('#remember-map-key').checked=c.rememberKey;$('#force-2d-map').checked=c.force2D;}
 syncMapSettings();
@@ -568,7 +562,7 @@ $('#factory-reset').onclick=()=>{
  resetMapUI();cancelLocate();stopSpeech();
  $$('dialog[open]').forEach(d=>d.close());lastDialogTrigger=null;lastSpeechTrigger=null;
  for(const key of [SETTINGS,SAVED,'access-adelaide-support-v2']){try{localStorage.removeItem(key);}catch{}}
- invalidateJourney();settings={...defaults};route=null;stepIndex=0;journeyPoints={start:null,end:null};endMapSelection(false,false);journeyMapVisible=false;$('#journey-map-slot').hidden=true;$('#selected-locations').open=false;renderJourneySummaries();attachMap('explore');syncJourneyMarkers();
+ invalidateJourney();settings={...defaults};route=null;stepIndex=0;journeyPoints={start:null,end:null};endMapSelection(false,false);journeyMapVisible=false;$('#journey-map-slot').hidden=true;attachMap('explore');syncJourneyMarkers();
  $('#journey-form').reset();$('#feedback-form').reset();$('#feedback').setCustomValidity('');
  $$('#communication,#quick-card-editor').forEach(e=>e.value='');
  $$('#route-summary,#step-guide,#saved-title,#communication-text,#quick-card-text,#feedback-status').forEach(e=>e.textContent='');
