@@ -4,9 +4,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const os=require('node:os');
+const {pathToFileURL}=require('node:url');
 const {firefox}=require(process.env.PLAYWRIGHT_MODULE||'@playwright/test');
 const root=path.resolve(__dirname,'..');
 const appHTML=path.resolve(process.env.APP_HTML||path.join(root,'index.html'));
+const fileOnly=process.env.FILE_ONLY==='1';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -16,8 +18,9 @@ const server=http.createServer((req,res)=>{
  res.setHeader('Content-Type',mime[path.extname(target)]||'application/octet-stream');fs.createReadStream(target).pipe(res);
 });
 async function main(){
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- const base=`http://127.0.0.1:${server.address().port}`;
+ if(!fileOnly)await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const base=fileOnly?pathToFileURL(appHTML).href:`http://127.0.0.1:${server.address().port}`;
+ const entryURL=fileOnly?base:base+'/';
  const browser=await firefox.launch({headless:true,...(process.env.FIREFOX_EXECUTABLE?{executablePath:process.env.FIREFOX_EXECUTABLE}:{})});
  const errors=[];
  try{
@@ -31,9 +34,9 @@ async function main(){
     localStorage.setItem('access-adelaide-basemap-v1',JSON.stringify({force2D:true,preferred:'esri'}));
     sessionStorage.setItem('dyslexic-scale-seeded','1');
    },seed);
-   await context.route('**/*',route=>route.request().url().startsWith(base)?route.continue():route.abort());
+   await context.route('**/*',route=>(fileOnly?route.request().url().startsWith('file:'):route.request().url().startsWith(base))?route.continue():route.abort());
    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
-   await page.goto(base+'/#setup');await page.waitForSelector('#setup-smaller');
+   await page.goto(entryURL+'#setup');await page.waitForSelector('#setup-smaller');
    return{context,page};
   }
   async function size(page,expected,{dyslexic=true}={}){
@@ -110,7 +113,8 @@ async function main(){
   for(const width of [320,390,412])for(const value of ['100','125']){
    await lp.setViewportSize({width,height:844});await navigate(lp,'setup');await set(lp,{textSize:value,dyslexicFont:true,theme:'contrast',spacing:true});await contained(`landing ${width}/${value}`);
    await navigate(lp,'journey');await lp.locator('#choose-start-map').click();await lp.waitForSelector('#map-selection:visible');await contained(`Journey ${width}/${value}`);
-   assert.equal(await lp.locator('#map-panel').evaluate(el=>el.classList.contains('compact-map-controls')),value==='100');
+   assert.equal(await lp.locator('#map-panel').evaluate(el=>el.classList.contains('compact-map-controls')),true);
+   assert.equal(await lp.getByRole('button',{name:'Move Map',exact:true}).count(),1);assert.equal(await lp.locator('#toggle-map-directions>[data-icon]').isVisible(),value==='125');assert.equal(await lp.locator('[data-move-map-label]').isVisible(),value==='100');
    await lp.locator('#cancel-map-location').click();await navigate(lp,'access');
    await lp.evaluate(()=>document.querySelector('#quick-display-dialog').showModal());await contained(`dialog ${width}/${value}`);
    const dialog=await lp.locator('#quick-display-dialog').boundingBox();assert.ok(dialog.x>=-1&&dialog.x+dialog.width<=width+1,'dialog within viewport');
@@ -121,4 +125,4 @@ async function main(){
   console.log('PASS Dyslexic scale: 100/125 cap, toggle/cycle labels, settings/dialog options, presets/onboarding, remembered migration, and mobile layouts with embedded font and spacing.');
  }finally{await browser.close();}
 }
-main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>server.close());
+main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{if(server.listening)server.close();});

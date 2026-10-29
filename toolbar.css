@@ -22,8 +22,6 @@
 .app-shell[data-button-display=icons] .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:max(60px,var(--target,48px));padding:8px 4px}
 .app-shell[data-button-display=icons] .bottom-nav a>span:last-child{display:none}
 .dyslexic-font .app-shell[data-button-display=labels] .bottom-nav,.app-shell.spacing[data-button-display=labels] .bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
-.app-shell[data-theme=contrast] button[aria-pressed=true],.app-shell[data-theme=contrast] button[aria-expanded=true],.app-shell[data-theme=dark] button[aria-pressed=true],.app-shell[data-theme=dark] button[aria-expanded=true],dialog[data-theme=contrast] button[aria-pressed=true],dialog[data-theme=dark] button[aria-pressed=true]{background:#fff!important;color:#000!important;border-color:#fff!important;box-shadow:inset 0 0 0 2px #000}
-.app-shell[data-theme=contrast] button[aria-pressed=true] svg,.app-shell[data-theme=contrast] button[aria-expanded=true] svg,.app-shell[data-theme=dark] button[aria-pressed=true] svg,.app-shell[data-theme=dark] button[aria-expanded=true] svg{color:#000;stroke:currentColor}
 /* Welcome actions and framed setup sections. */
 .setup-controls:has(#setup-shortcuts-only){display:flex;flex-direction:column;gap:10px;margin:20px 0 25px}
 .setup-controls:has(#setup-shortcuts-only)>.setup-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}

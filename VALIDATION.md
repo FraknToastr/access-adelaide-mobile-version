@@ -156,6 +156,14 @@ Selected WCAG relative-luminance calculations, rounded:
 | High contrast white / black | 21.00:1 |
 | Border #75877b / white | 3.81:1 |
 
+## Shared UI consolidation — 2026-10-29
+
+- Source syntax, UI contracts, whitespace checks and deterministic standalone build checks passed.
+- The routing and Dyslexic browser suites passed against the source; `FILE_ONLY=1` preserves every scenario while avoiding the environment's intermittent localhost `listen EPERM` restriction. Default HTTP test mode remains available.
+- The new direct-file shared-UI suite passed against both source and standalone. It checks Explore/Journey button geometry, normal shared frames, frameless Large Mode, controls above navigation on short screens, all supported normal/Dyslexic font sizes and reading spacing, button-content overflow, largest-size compass controls, shared framed sections, dashboard heading/region/focus and light/dark/contrast selected states.
+- The complete standalone suite passed: isolated one-member ZIP, source parity, embedded assets/licences, offline routing/setup/reset, and all routing, Dyslexic and shared-UI child suites. The rebuilt HTML is 2,724,680 bytes; the ZIP is 889,267 bytes.
+- This run used headless Firefox. Direct Edge/Chromium and physical-device validation remain outside this result. No GitHub commit or push was performed.
+
 ## Still required
 
 - Physical iPhone/Android tests, VoiceOver, TalkBack, Voice Control/Voice Access and switch hardware.

@@ -153,6 +153,7 @@ function attachMap(owner){
  const panel=$('#map-panel');
  if(mapOwner!==owner)resetMapUI();
  mapOwner=owner;panel.dataset.owner=owner;
+ syncMapControlLayout();
  if(owner==='journey'){$('#journey-map-slot').append(panel);$('#journey-map-slot').hidden=!journeyMapVisible;panel.hidden=!journeyMapVisible;}
  else{$('#explore-map-slot').after(panel);$('#journey-map-slot').hidden=true;panel.hidden=!exploreMapVisible;}
  document.body.classList.toggle('journey-map-active',owner==='journey');
@@ -167,7 +168,8 @@ function setExploreMode(showMap,focus=false){
   $('#map-panel').hidden=!showMap;
  }
  $('#show-map').setAttribute('aria-pressed',String(showMap));$('#show-list').setAttribute('aria-pressed',String(!showMap));
- $('#map-description').textContent=showMap?'Illustrative locations near North Terrace. Every point is also available in the places list.':'Places list. All point layers are available here without using the map.';
+ $('#map-description').textContent=showMap?'Illustrative locations near North Terrace. Every point is also available in the places list.':'';
+ $('#map-description').hidden=!showMap;
  if(showMap&&mapOwner==='explore'){initMap();if(map)requestAnimationFrame(()=>map.resize());}
  if(focus)announce(showMap?'Map shown. The equivalent places list is below.':'List view selected. The map is hidden.');
 }
@@ -233,7 +235,7 @@ $('#online-map').onchange=e=>{if(map)map.setLayoutProperty('basemap','visibility
 // The canvas stays above its controls; the full legend expands in page flow.
 function syncMapControlLayout(){
  const panel=$('#map-panel');if(!panel)return;
- const compact=!getTextScale().isLargest;
+ const compact=mapOwner==='journey'||!getTextScale().isLargest;
  panel.classList.toggle('compact-map-controls',compact);
  const layout=compact?'compact':'large';
  if(panel.dataset.controlsLayout!==layout){
@@ -296,7 +298,6 @@ function setMapLegend(open,restoreFocus=false){
  });
 }
 function setBigMap(expanded,restoreFocus=false){
- if(expanded&&mapOwner==='journey')return;
  if(expanded===bigMap)return;
  if(expanded){bigMapScroll=window.scrollY;bigMap=true;}
  else bigMap=false;
@@ -305,7 +306,7 @@ function setBigMap(expanded,restoreFocus=false){
  $('#map').setAttribute('aria-describedby',mapOwner==='journey'?'journey-map-description':'map-description');
  syncMapControlLayout();
  if(expanded)window.scrollTo({top:0,behavior:'instant'});
- else if(currentView==='explore')window.scrollTo({top:bigMapScroll,behavior:'instant'});
+ else if(['explore','journey'].includes(currentView))window.scrollTo({top:bigMapScroll,behavior:'instant'});
  requestAnimationFrame(()=>{
   if(map){map.resize();renderMarkers();}
   if(expanded&&bigMap)keepMapControlVisible(button);
@@ -446,6 +447,7 @@ function endMapSelection(confirm=false,restoreFocus=true){
  const selection=mapSelection;if(!selection)return;
  if(confirm&&map){const coords=map.getCenterCoordinates(),gps=selection.kind==='gps';setJourneyPoint(selection.target,{coords,label:`${gps?'Current location':'Map point'} (${coords[1].toFixed(5)}, ${coords[0].toFixed(5)})`,kind:gps?'gps':'map'});}
  cancelLocate();mapSelection=null;if(map)map.setSelection(null);$('#routing-status').textContent='';
+ if(bigMap&&mapOwner==='journey')setBigMap(false);
  setSelectionControls();syncJourneyMarkers();
  if(restoreFocus&&currentView==='journey'){requestAnimationFrame(()=>$(selection.returnFocus).focus());announce(confirm?'Location confirmed.':'Map selection cancelled. Your previous point has been kept.');}
 }
@@ -499,7 +501,7 @@ $('#journey-form').addEventListener('change',e=>{if(e.target.matches('input'))in
 function removeRouteFromMap(){if(map)map.setRoute([]);syncJourneyMarkers();$('#fit-route').hidden=true;}
 function renderRoute(){
  stepIndex=0;$('#journey-result').hidden=false;const r=route;
- $('#route-summary').innerHTML=`<div class="route-card"><p>${escapeHTML(r.origin)} →</p><h3>${escapeHTML(r.name)}</h3><p>${r.styleName} · calculated walking network</p><div class="route-stats"><div><strong>${Math.round(r.distance)} m</strong><span>Network distance</span></div><div><strong>~${Math.ceil(r.duration)} min</strong><span>Estimated moving time</span></div></div><p class="route-snap-info">Start snapped ${r.snaps.start.distance.toFixed(1)} m; destination snapped ${r.snaps.end.distance.toFixed(1)} m. Limit: 50 m each. These offsets are outside the calculated route.</p></div><div class="route-caveat"><strong>Test route. Access has not been verified.</strong><p>Private, unofficial, proposed and timed paths are excluded.${r.style==='stepfree'?' Recorded stairs and escalators are also excluded; this does not establish wheelchair access.':''}</p><p>Kerb ramps, gradients, widths, surfaces, crossings, closures and facilities have not been checked. ${r.points.start.kind==='sample'||r.points.end.kind==='sample'?'The selected sample place information is invented and its entrance is unverified.':''}</p><p>Preferences not checked: ${escapeHTML(r.needs.join('; ')||'none selected')}. Rest stops and quieter surroundings are not optimised. ETA uses network speed estimates scaled to your ${r.pace} m/min pace; rest time is extra.</p></div>`;
+ $('#route-summary').innerHTML=`<p class="journey-endpoints">${escapeHTML(r.origin)} → ${escapeHTML(r.name)}</p><fieldset class="journey-dashboard framed-group"><legend><h2 id="result-title" tabindex="-1">Your walking journey</h2></legend><div class="journey-metrics"><div class="journey-metric"><span>Distance</span><strong>${Math.round(r.distance)} m</strong></div><div class="journey-metric"><span>Travel time</span><strong>~${Math.ceil(r.duration)} min</strong></div></div></fieldset><p class="route-snap-info">Start snapped ${r.snaps.start.distance.toFixed(1)} m; destination snapped ${r.snaps.end.distance.toFixed(1)} m. Limit: 50 m each. These offsets are outside the calculated route.</p>`;
  $('#step-guide').innerHTML=`<p class="small">${r.steps.length} approximate ${r.steps.length===1?'step':'steps'}. Read below or move at your own pace. Nothing advances automatically.</p><ol class="steps" role="list">${r.steps.map((s,i)=>`<li id="step-${i}" role="listitem" tabindex="-1"><span class="step-number" aria-hidden="true">${i+1}</span><div><p><strong>${escapeHTML(s.title)}</strong>${escapeHTML(s.text)}</p><span class="small">${s.distance} m · network segment</span></div></li>`).join('')}</ol><p id="step-progress" class="small">Step 1 of ${r.steps.length}</p><div class="step-controls"><button id="previous-step" class="secondary" disabled>Previous step</button><button id="next-step" class="primary" ${r.steps.length===1?'disabled':''}>Next step</button></div>`;
  $('#previous-step').onclick=()=>moveStep(-1);$('#next-step').onclick=()=>moveStep(1);drawRoute();$('#fit-route').hidden=false;
 }

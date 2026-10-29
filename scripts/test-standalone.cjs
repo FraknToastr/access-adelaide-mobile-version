@@ -76,10 +76,9 @@ with zipfile.ZipFile(archive) as z:
   assert.equal(await page.evaluate(()=>AccessBasemaps.getConfig().key),'standalone-reset-fixture');
   await context.close();
  }finally{await browser.close();}
- // Run the full existing suites against the extracted HTML. Their test server
- // serves only this entry when APP_HTML is provided, preventing asset fallback.
- const env={...process.env,APP_HTML:file};
- run('test-routing-browser.cjs',env);run('test-dyslexic-scale-browser.cjs',env);
- console.log('PASS standalone: one-file ZIP, source parity, embedded assets/licenses, isolated offline file://, current setup/Travel Mode/reset changes, routing and Dyslexic regression suites.');
+ // Run every scenario against the isolated extracted file without a localhost server.
+ const env={...process.env,APP_HTML:file,FILE_ONLY:'1'};
+ run('test-routing-browser.cjs',env);run('test-dyslexic-scale-browser.cjs',env);run('test-shared-ui-browser.cjs',env);
+ console.log('PASS standalone: one-file ZIP, source parity, embedded assets/licenses, isolated offline file://, current setup/Travel Mode/reset changes, routing, Dyslexic and shared-UI regression suites.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>fs.rmSync(temp,{recursive:true,force:true}));

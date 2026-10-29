@@ -9,6 +9,9 @@
 .choice-card:has(input:checked){border-color:var(--accent,var(--text));box-shadow:inset 0 0 0 1px var(--accent,var(--text))}
 .choice-card:focus-within{outline-offset:3px}
 .field>.choice-group{margin-bottom:0}
+fieldset,.framed-group{min-width:0;max-width:100%;border:1px solid var(--border);border-radius:var(--frame-radius);padding:var(--frame-padding);margin:18px 0 24px}
+legend,.framed-group>legend{font-size:1.05rem;font-weight:700;padding:0 var(--frame-legend-inset);margin:0;line-height:1.4}
+.framed-group>legend>h2{font:inherit;letter-spacing:normal;line-height:inherit;margin:0}
 dialog .choice-group{width:100%}
 .quick-adjustments .preset-list{margin:8px 0 0}
 .inline-platform-guide{min-width:0;max-width:100%;overflow-wrap:anywhere}

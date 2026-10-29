@@ -10,6 +10,7 @@ const {pathToFileURL}=require('node:url');
 const {firefox}=require(process.env.PLAYWRIGHT_MODULE||'@playwright/test');
 const root=path.resolve(__dirname,'..');
 const appHTML=path.resolve(process.env.APP_HTML||path.join(root,'index.html'));
+const fileOnly=process.env.FILE_ONLY==='1';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2'};
 const server=http.createServer((req,res)=>{
  const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -19,8 +20,9 @@ const server=http.createServer((req,res)=>{
  res.setHeader('Content-Type',mime[path.extname(target)]||'application/octet-stream');fs.createReadStream(target).pipe(res);
 });
 async function main(){
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- const base=`http://127.0.0.1:${server.address().port}`;
+ if(!fileOnly)await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const base=fileOnly?pathToFileURL(appHTML).href:`http://127.0.0.1:${server.address().port}`;
+ const entryURL=fileOnly?base:base+'/';
  const browser=await firefox.launch({headless:true,...(process.env.FIREFOX_EXECUTABLE?{executablePath:process.env.FIREFOX_EXECUTABLE}:{})});
  try{
   const context=await browser.newContext({viewport:{width:390,height:844},acceptDownloads:true});
@@ -49,7 +51,7 @@ async function main(){
    assert.equal(await page.locator('#journey-map-slot #map-panel').count(),1);
    assert.equal(await page.locator('#map').count(),1);
    assert.equal(await page.locator('#locate-me').isVisible(),target==='start');
-   assert.equal(await page.locator('#toggle-big-map').isVisible(),false);
+  assert.equal(await page.locator('#toggle-big-map').isVisible(),true);
    assert.equal(await page.locator('#toggle-map-legend').isVisible(),false);
    const canvas=await page.locator('#map').boundingBox(),startButton=await choice('start').boundingBox(),endButton=await choice('end').boundingBox(),selection=await page.locator('#map-selection').boundingBox();
    assert.ok(startButton.y+startButton.height<=canvas.y+1&&endButton.y+endButton.height<=canvas.y+1,'both choices stay above the map');
@@ -72,7 +74,7 @@ async function main(){
    await page.locator('#locate-me').click();assert.equal(await page.locator('#locate-me').getAttribute('aria-busy'),'true');
   }
   async function replyGPS(coords){await page.evaluate(c=>gpsReply.success({coords:{longitude:c[0],latitude:c[1],accuracy:5}}),coords);}
-  await page.goto(base+'/#journey');await page.waitForSelector('#calculate-route');
+  await page.goto(entryURL+'#journey');await page.waitForSelector('#calculate-route');
   assert.equal(await page.locator('input[name="route-style"]:checked').inputValue(),'shortest');
   assert.equal(await page.locator('#selected-locations,#map-selection-title').count(),0);
   assert.equal(await page.locator('#origin-text,#destination-text,#sample-start-choices,#sample-end-choices').count(),0);
@@ -110,18 +112,20 @@ async function main(){
   assert.equal(await page.locator('#locate-me').isVisible(),false);
 
   await calculate();assert.match(await page.locator('#route-summary').innerText(),/774 m/);assert.match(await page.locator('#route-summary').innerText(),/Start snapped/);assert.ok(await page.locator('#step-guide li').count()>1);
+ assert.equal(await page.locator('.journey-dashboard.framed-group>legend h2#result-title').count(),1);assert.equal(await page.getByRole('heading',{name:'Your walking journey',exact:true}).count(),1);assert.equal(await page.evaluate(()=>document.activeElement.id),'result-title');
+ assert.equal(await page.locator('fieldset.route-options.framed-group,fieldset#pace.framed-group').count(),2);assert.equal(await page.locator('.journey-metric').count(),2);assert.equal(await page.locator('.route-caveat,.route-card').count(),0);
   await page.locator('#save-route').click();const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('access-adelaide-journey-v1')));assert.equal(saved.version,2);assert.ok(saved.points.start.coords);
   const downloadPromise=page.waitForEvent('download');await page.locator('#download-route').click();const download=await downloadPromise;
   const text=fs.readFileSync(await download.path(),'utf8');assert.match(text,/Network distance: 774 m/);assert.doesNotMatch(text,/Illustrative distance/);
   await page.locator('#route-map').click();assert.equal(await page.evaluate(()=>location.hash),'#journey');assert.equal(await page.locator('#journey-map-slot #map-panel').count(),1);await page.locator('#fit-route').click();
-  await page.goto(base+'/#journey');await page.locator('#load-saved').click();await page.waitForSelector('#journey-result:visible');assert.match(await page.locator('#route-summary').innerText(),/774 m/);
+  await page.goto(entryURL+'#journey');await page.locator('#load-saved').click();await page.waitForSelector('#journey-result:visible');assert.match(await page.locator('#route-summary').innerText(),/774 m/);
 
   // Previously saved coordinate-backed sample endpoints remain usable; the
   // removed sample-name picker is not needed to load an existing coordinate save.
   await page.evaluate(spec=>{spec.points.start.kind='sample';spec.points.end.kind='sample';localStorage.setItem('access-adelaide-journey-v1',JSON.stringify(spec));},saved);
-  await page.goto(base+'/#journey');await page.locator('#load-saved').click();await page.waitForSelector('#journey-result:visible');
+  await page.goto(entryURL+'#journey');await page.locator('#load-saved').click();await page.waitForSelector('#journey-result:visible');
   await page.evaluate(()=>localStorage.setItem('access-adelaide-journey-v1',JSON.stringify({origin:'Railway Station entrance',destinationLabel:'Cultural precinct toilet',style:'rest'})));
-  await page.goto(base+'/#journey');await page.locator('#load-saved').click();assert.match(await page.locator('#routing-status').innerText(),/old illustrative/i);assert.equal(await page.locator('#journey-result').isVisible(),false);
+  await page.goto(entryURL+'#journey');await page.locator('#load-saved').click();assert.match(await page.locator('#routing-status').innerText(),/old illustrative/i);assert.equal(await page.locator('#journey-result').isVisible(),false);
   await page.locator('#calculate-route').click();assert.equal(await page.locator('#journey-result').isVisible(),false);
   await choosePoint('start',[139,-35]);await choosePoint('end',END);await page.locator('#calculate-route').click();await page.waitForFunction(()=>document.querySelector('#routing-status').textContent.includes('50'));assert.equal(await page.locator('#journey-result').isVisible(),false);
   await choosePoint('start',START);await calculate();
@@ -144,7 +148,16 @@ async function main(){
     await page.setViewportSize({width,height:844});await openChoice('start');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`page overflow at ${width}/${size}%`);
     const overflow=await page.locator('#view-journey button').evaluateAll(buttons=>buttons.filter(b=>b.getClientRects().length&&b.scrollWidth>b.clientWidth+2).map(b=>b.textContent));assert.deepEqual(overflow,[],`button overflow at ${width}/${size}%`);
+      const controls=page.locator('.map-primary-controls>button');assert.equal(await controls.count(),5);
+      const tops=await controls.evaluateAll(buttons=>buttons.map(b=>Math.round(b.getBoundingClientRect().top)));assert.equal(new Set(tops).size,1,'Journey controls stay in one row');
+      await page.locator('#toggle-big-map').click();assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('big-map')),true);
+      const largeCanvas=await page.locator('#map').boundingBox(),largePanel=await page.locator('.map-control-panel').boundingBox();assert.ok(largeCanvas.height>=96&&largeCanvas.y+largeCanvas.height<=largePanel.y+2,'Journey large map stays above controls');
+      const footer=await page.locator('.bottom-stack').boundingBox();assert.ok(largePanel.y+largePanel.height<=footer.y+2,'Journey controls stay above navigation');
+      assert.equal(await page.locator('#toggle-big-map').getAttribute('aria-label'),'Normal Map');
+      await page.locator('#toggle-map-directions').click();assert.equal(await page.locator('#map-directions').isVisible(),true);assert.equal(await page.locator('#toggle-map-directions').getAttribute('aria-pressed'),'true');
+      await page.locator('[data-pan=east]').click();await page.locator('#toggle-map-directions').click();
     await page.locator('#cancel-map-location').click();
+      assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('big-map')),false);assert.equal(await choice('start').isVisible(),true);
    }
   }
   await page.setViewportSize({width:390,height:844});await openChoice('start');await page.screenshot({path:path.join(os.tmpdir(),'adelaide-inline-journey-map.png')});await page.locator('#cancel-map-location').click();
@@ -154,7 +167,7 @@ async function main(){
   await page.goto(pathToFileURL(appHTML).href+'#journey');await choosePoint('start',START);await choosePoint('end',END);await calculate();assert.match(await page.locator('#route-summary').innerText(),/774 m/);
 
   // Deliberately slow calculations expose navigation, selection and reset races.
-  await page.goto(base+'/#journey');await page.evaluate(()=>{const real=window.AccessRouting;window.AccessRouting={...real,create:async data=>{const engine=await real.create(data);return{...engine,calculate:async spec=>{await new Promise(resolve=>setTimeout(resolve,250));return engine.calculate(spec);}};}};});
+  await page.goto(entryURL+'#journey');await page.evaluate(()=>{const real=window.AccessRouting;window.AccessRouting={...real,create:async data=>{const engine=await real.create(data);return{...engine,calculate:async spec=>{await new Promise(resolve=>setTimeout(resolve,250));return engine.calculate(spec);}};}};});
   await choosePoint('start',START);await choosePoint('end',END);await page.locator('#calculate-route').click();
   await page.evaluate(()=>{location.hash='access';});await page.waitForSelector('#view-access:not([hidden])');await page.waitForTimeout(400);assert.equal(await page.locator('#journey-result').isVisible(),false);assert.notEqual(await page.evaluate(()=>document.activeElement.id),'result-title');
   await page.locator('#bottom-nav a[href="#journey"]').click();assert.equal(await page.locator('#calculate-route').isEnabled(),true);
@@ -172,4 +185,4 @@ async function main(){
   console.log('PASS browser: inline Journey map, confirmed endpoint state, confirmed map/GPS endpoints, stale GPS/calculation races, one shared map, saved/legacy routes, download, Explore state/controls, offline file://, 100/125/150% text at 320/390/412 px and existing setup/navigation/Help.');
  }finally{await browser.close();}
 }
-main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>server.close());
+main().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{if(server.listening)server.close();});

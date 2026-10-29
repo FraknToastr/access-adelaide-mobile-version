@@ -47,11 +47,11 @@ Eight categories: Toilets, Public transport, Shops, Food & drink, A place to res
 
 Use **Tiles**, **One at a time** or **List choices**. The one-at-a-time view includes Previous and Next. If enabled, horizontal swipes or a shake cycle choices; they never confirm a selection. The sensor listener is off by default and paused when the page is hidden. Motion support needs a compatible device/browser and any permission required by that browser. Enable shake again after reopening; the app does not automatically request motion permission.
 
-There are 14 mock points across 10 map layers. A category filters both map and list. **Show all mock places** restores the full set. The initial home view is list-first, with the map available from **Map**.
+There are 14 mock points across 10 map layers. A category filters both map and list. Selecting the active category again restores the full set. The initial home view is list-first, with the map available from **Map**.
 
 ## Calculate a walking-network journey
 
-On **Let's get you there**, choose **Choose start on map** or **Choose destination on map**. Both buttons sit above a shared inline map; selection stays on Journey. Tap to move the crosshair, or use Move Map and its directional buttons, then confirm with **Use this start** or **Use this destination**. Switching endpoints or cancelling discards only the draft selection. Read-only **Selected locations** summaries start collapsed. There are no Journey sample-place lists or address-entry fields; Explore's illustrative places remain available.
+On **Let's get you there**, choose **Choose start on map** or **Choose destination on map**. Both buttons sit above a shared inline map; selection stays on Journey. Tap to move the crosshair, or use Move Map and its directional buttons, then confirm with **Use this start** or **Use this destination**. Switching endpoints or cancelling discards only the draft selection. There are no Journey sample-place lists or address-entry fields; Explore's illustrative places remain available.
 
 **Locate me** appears on the map only while choosing the start. It requests a single GPS fix, positions the crosshair and waits for **Use this start** before committing it. Moving the map, switching endpoints, cancelling or leaving Journey invalidates pending GPS results. GPS denial leaves tapping and map movement available. No automatic GPS tracking is added.
 
@@ -101,9 +101,9 @@ Shortcut preferences and saved numbers follow **Remember my setup on this device
 
 ## Map controls
 
-**Move Map** reveals one row of four arrow-only buttons in North, South, West, East order. At 100% or 125% text, the main controls occupy one row: Move Map, zoom in, zoom out, Large Map and Recentre. Larger text uses roomier controls. Recentre fits the selected mock places.
+**Move Map** reveals one row of four arrow-only buttons in North, South, West, East order. Journey always uses the shared five-button row: Move Map, zoom in, zoom out, Large Map and Recentre. Explore uses that row at its compact text sizes and roomier controls at its largest text size. At the largest normal or Dyslexic size, a compact row shows the compass icon with the accessible name **Move Map**, rather than shrinking its label. Recentre fits the current journey points or selected mock places.
 
-**Large Map** expands the map with the control panel below the canvas and the app's sticky panel below both. The canvas is never behind the map controls. **Normal Map** or Escape restores the page. Map resizing retains centre and zoom; short viewports keep controls scrollable without shrinking touch targets.
+**Large Map** fills the app shell without a frame or rounded corners, keeping the control panel below the canvas and above bottom navigation. Normal mode uses one frame around both canvas and transparent controls. **Normal Map** or Escape restores the page; confirming or cancelling a location also returns to normal mode. Short viewports keep controls scrollable without shrinking touch targets.
 
 The **Legend** toggle beside the mock-points badge opens the full legend and map options in page flow. In Large Map, the canvas becomes a smaller header while every legend entry remains reachable by page scrolling. Bottom navigation remains accessible. **Back to controls** restores the map controls and large canvas; Escape closes the legend before leaving Large Map. **Map credits** and provider links are in Help; renderer/provider status paragraphs are not shown on the map.
 
@@ -148,9 +148,9 @@ Settings and cards are remembered only when chosen. Browser storage can be unava
 - `index.html`: semantic interface, setup shell, dialogs and inline Help guide.
 - `app.js`: navigation, access settings, calculated journeys, endpoint selection, exports and speech.
 - `support-ui.js`: onboarding, shortcut drawers, profiles, categories, tools and optional category inputs.
-- `ui-controls.js` / `ui-controls.css`: visible radio-card choices and shared reduced-motion-aware drawers.
+- `ui-controls.js` / `ui-controls.css`: visible radio-card choices, shared `.framed-group` fieldsets/legends and reduced-motion-aware drawers.
 - `setup-shortcuts.css`: shortcut chooser and icon-only row.
-- `map-controls.css`: compact controls, stacked map layout and full page-flow legend.
+- `map-controls.css`: the single owner of map frames, canvas/control geometry, Large Mode, shared map sizing tokens and full page-flow legend.
 - `toolbar.css`: responsive tool/navigation rows and centered SVG controls.
 - `press-hints.js` / `press-hints.css`: optional pointer, focus and keyboard hints.
 - `map-engine.js`: MapLibre, 2D tiles, provider failover, point selection and route overlays.
@@ -159,12 +159,22 @@ Settings and cards are remembered only when chosen. Browser storage can be unava
 - `data/walking-pathways.geojson`: unchanged WGS84 routing input; `scripts/build-routing-data.cjs` regenerates the runtime data.
 - `platform-guide.js`: browser/PWA/iPhone/Android comparisons and source links.
 - `data.js` / `mock_points.geojson`: invented examples and local geometry.
-- `styles.css`: mobile layout, themes, focus states and reflow.
+- `styles.css`: mobile layout, theme and frame/card tokens, shared selected-button states, focus states and reflow.
 - `vendor/`: pinned MapLibre distribution and licence.
 - `standalone/`: generated single-file HTML and one-file ZIP; regenerate with `scripts/build-standalone.cjs`.
 
 ## UI rules and checks
 
 This is a mobile-only interface. The authored changes were migrated from published build `fcfd801834b98bce2a4593e1e67594eb89bb1320`; workspace assets and modules remain local. Native selects, datalists and custom popup selectors are prohibited; use visible choice cards and inline drawers. Run `rtk proxy node scripts/check-ui-contracts.cjs` to check application sources for dropdown selectors. `AGENTS.md` records these rules for future changes. Browser checks still need to cover onboarding, drawer focus/motion, text reflow, shortcut rows and both map renderer paths where available.
+
+With an installed Playwright package and Firefox runtime, run the shared-component regressions directly from `file://`, without a localhost server:
+
+```bash
+rtk proxy env PLAYWRIGHT_MODULE=/absolute/path/to/@playwright/test FIREFOX_EXECUTABLE=/absolute/path/to/firefox node scripts/test-shared-ui-browser.cjs
+```
+
+Set `APP_HTML=/absolute/path/to/Access_Adelaide.html` to check a standalone file. The runner covers Explore/Journey map-control parity, normal and Large Map frames, short-screen navigation, largest-text compass controls, framed sections, dashboard heading/focus and theme states. The standalone suite also runs these checks against its extracted ZIP member.
+
+The existing routing and Dyslexic browser suites retain their default localhost HTTP fixtures. Set `FILE_ONLY=1` when running either suite to execute every scenario directly from its HTML file without opening a server. The standalone suite automatically uses this mode for its extracted single-file HTML.
 
 `ACCESSIBILITY.md` records implementation decisions. `VALIDATION.md` records tests and their limits. No WCAG conformance, native-app certification, Lighthouse score or real-world route accessibility is claimed.
