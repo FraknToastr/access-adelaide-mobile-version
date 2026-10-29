@@ -317,6 +317,7 @@ function resetMapUI(){
  setBigMap(false);
  $('#map-directions').hidden=true;
  $('#toggle-map-directions').setAttribute('aria-expanded','false');
+ $('#toggle-map-directions').setAttribute('aria-pressed','false');
 }
 $('#toggle-big-map').onclick=()=>setBigMap(!bigMap,true);
 $('#toggle-map-legend').onclick=()=>setMapLegend(!legendOpen,true);
@@ -325,6 +326,7 @@ $('#toggle-map-directions').onclick=()=>{
  const expanded=$('#map-directions').hidden;
  $('#map-directions').hidden=!expanded;
  $('#toggle-map-directions').setAttribute('aria-expanded',String(expanded));
+ $('#toggle-map-directions').setAttribute('aria-pressed',String(expanded));
  if(expanded)requestAnimationFrame(()=>{
   const grid=$('#map-directions');
   if(grid.hidden||!['explore','journey'].includes(currentView)||$('#map-panel').hidden)return;
@@ -388,7 +390,7 @@ $('#locate-me').onclick=()=>{
   if(!isCurrent())return;finish();
   const {latitude,longitude}=position.coords;
   if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180){status.textContent='Your location could not be found. Tap the map or use Move Map.';return;}
-  selection.kind='gps';map.jumpTo({center:[longitude,latitude]});updateSelectionPosition();
+  selection.kind='gps';map.jumpTo({center:[longitude,latitude]});
   status.textContent='Location found. Choose Use this start to confirm it.';
  },error=>{
   if(!isCurrent())return;finish();
@@ -410,12 +412,6 @@ function ensureRouter(){
  }
  return routingPromise;
 }
-function updateSelectionPosition(){
- if(!mapSelection||!map)return;
- const c=map.getCenterCoordinates();
- $('#map-selection-position').textContent=`Crosshair: ${c[1].toFixed(5)}, ${c[0].toFixed(5)}. The point must be within 50 metres of an eligible path.`;
-}
-document.addEventListener('accessadelaide:mapmove',updateSelectionPosition);
 function setSelectionControls(){
  const active=mapSelection;
  $('#map').setAttribute('aria-label',active?(active.target==='start'?'Choose your starting point on the map':'Choose your destination on the map'):(mapOwner==='journey'?'Journey walking map':'Map of central Adelaide'));
@@ -443,11 +439,11 @@ async function beginMapSelection(target){
   // Mount immediately, before network preparation completes, and never navigate away.
   journeyMapVisible=true;attachMap('journey');initMap();
   if(!map)throw new Error('The map could not load. Reopen the app with its source files available.');
-  const onSelect=coords=>{if(mapSelection!==selection)return;manualSelectionInteraction();map.setSelection({active:true,coords,onSelect});updateSelectionPosition();};
+  const onSelect=coords=>{if(mapSelection!==selection)return;manualSelectionInteraction();map.setSelection({active:true,coords,onSelect});};
   const centre=journeyPoints[target]?.coords||map.getCenterCoordinates();
   map.setSelection({active:true,coords:centre,onSelect});syncJourneyMarkers();
   await showJourneyMap();if(mapSelection!==selection||currentView!=='journey')return;
-  $('#routing-status').textContent='';updateSelectionPosition();
+  $('#routing-status').textContent='';
   requestAnimationFrame(()=>{if(mapSelection!==selection)return;map.resize();$('#map').focus({preventScroll:true});window.scrollTo({top:window.scrollY+$('#journey-map-slot').getBoundingClientRect().top-8,behavior:'instant'});});
   announce('Choose a point by tapping the map or using Move Map, then confirm it.');
  }catch(error){if(mapSelection===selection){endMapSelection(false,false);$('#routing-status').textContent=error.message;}}
